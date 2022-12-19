@@ -40,7 +40,7 @@ lio_sam:
   imuRPYWeight: 0.01
 
   # Extrinsics (lidar -> IMU, of MulRan dataset)
-  extrinsicTrans: [1.77, -0.00, -0.05]
+  extrinsicTrans: [0, -0.00, -0.05]
   extrinsicRot: [-1, 0, 0,
                   0, -1, 0,
                   0, 0, 1]
