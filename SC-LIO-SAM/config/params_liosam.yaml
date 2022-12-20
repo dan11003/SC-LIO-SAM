@@ -21,7 +21,6 @@ lio_sam:
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
   savePCDDirectory: "/home/daniel/Documents/scliosam/data/"  # use global path, and end with "/" 
-    # warning: if you have already data in the above savePCDDirectory, it will all remove and remake them. Thus, backup is recommended if pre-made data exist. 
 
   # Sensor Settings
   sensor: velodyne                            # lidar sensor type, 'velodyne' or 'ouster' or 'livox'
@@ -32,14 +31,14 @@ lio_sam:
   lidarMaxRange: 1000.0                       # default: 1000.0, maximum lidar range to be used
 
   # IMU Settings
-  imuAccNoise: 0.009939570888238808e-03
-  imuGyrNoise: 0.005636343949698187e-03
-  imuAccBiasN: 0.64356659353532566e-03
-  imuGyrBiasN: 0.35640318696367613e-03
+  imuAccNoise: 3.9939570888238808e-03
+  imuGyrNoise: 1.5636343949698187e-03
+  imuAccBiasN: 6.4356659353532566e-05
+  imuGyrBiasN: 3.5640318696367613e-05
   imuGravity: 9.80511
   imuRPYWeight: 0.01
 
-  # Extrinsics (lidar -> IMU)
+  # Extrinsics: T_lb (lidar -> imu)
   extrinsicTrans: [0.0, 0.0, 0.0]
   extrinsicRot: [-1, 0, 0,
                   0, 1, 0,

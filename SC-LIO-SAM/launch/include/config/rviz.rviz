@@ -4,7 +4,15 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /links1
+        - /links1/TF1
+        - /links1/TF1/Frames1
+        - /links1/TF1/Tree1
+        - /Point Cloud1/Reg Cloud1
+        - /Velodyne1
         - /Mapping1
+        - /Mapping1/Path (global)1
+        - /Mapping1/Path (local)1
       Splitter Ratio: 0.47826087474823
     Tree Height: 701
   - Class: rviz/Selection
@@ -28,33 +36,65 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/TF
-          Enabled: false
+          Enabled: true
           Frame Timeout: 999
           Frames:
             All Enabled: false
+            base_link:
+              Value: false
+            chassis_link:
+              Value: false
+            imu_link:
+              Value: false
+            lidar_link:
+              Value: false
+            map:
+              Value: false
+            navsat_link:
+              Value: false
+            odom:
+              Value: true
+            velodyne:
+              Value: true
+          Marker Alpha: 1
           Marker Scale: 3
           Name: TF
           Show Arrows: true
           Show Axes: true
           Show Names: true
           Tree:
-            {}
+            map:
+              odom:
+                base_link:
+                  chassis_link:
+                    imu_link:
+                      {}
+                    navsat_link:
+                      {}
+                    velodyne:
+                      {}
+                lidar_link:
+                  {}
           Update Interval: 0
-          Value: false
-        - Class: rviz/Axes
-          Enabled: true
+          Value: true
+        - Alpha: 1
+          Class: rviz/Axes
+          Enabled: false
           Length: 2
           Name: map
           Radius: 0.5
           Reference Frame: map
-          Value: true
-        - Class: rviz/Axes
-          Enabled: true
+          Show Trail: false
+          Value: false
+        - Alpha: 1
+          Class: rviz/Axes
+          Enabled: false
           Length: 1
           Name: base_link
           Radius: 0.30000001192092896
           Reference Frame: base_link
-          Value: true
+          Show Trail: false
+          Value: false
       Enabled: true
       Name: links
     - Class: rviz/Group
@@ -80,6 +120,7 @@ Visualization Manager:
           Keep: 300
           Name: Odom IMU
           Position Tolerance: 0.10000000149011612
+          Queue Size: 10
           Shape:
             Alpha: 1
             Axes Length: 0.5
@@ -114,6 +155,7 @@ Visualization Manager:
           Keep: 300
           Name: Odom GPS
           Position Tolerance: 0.10000000149011612
+          Queue Size: 10
           Shape:
             Alpha: 1
             Axes Length: 1
@@ -148,6 +190,7 @@ Visualization Manager:
           Keep: 300
           Name: Odom lidar
           Position Tolerance: 0.10000000149011612
+          Queue Size: 10
           Shape:
             Alpha: 1
             Axes Length: 0.25
@@ -177,12 +220,10 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 7188
           Min Color: 0; 0; 0
-          Min Intensity: 3
           Name: Velodyne
           Position Transformer: XYZ
           Queue Size: 10
@@ -194,7 +235,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -210,9 +251,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.7900000214576721
           Min Color: 0; 0; 0
-          Min Intensity: 0
           Name: Reg Cloud
           Position Transformer: XYZ
           Queue Size: 10
@@ -227,6 +266,34 @@ Visualization Manager:
           Value: false
       Enabled: true
       Name: Point Cloud
+    - Alpha: 0.10000000149011612
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 10000
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: Velodyne
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: false
+      Size (Pixels): 2
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic: /lio_sam/mapping/cloud_registered_raw
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -244,9 +311,7 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.077729225158691
           Min Color: 0; 0; 0
-          Min Intensity: 0.019985778257250786
           Name: Edge Feature
           Position Transformer: XYZ
           Queue Size: 10
@@ -274,9 +339,7 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.100607872009277
           Min Color: 0; 0; 0
-          Min Intensity: 0.0007188677554950118
           Name: Plannar Feature
           Position Transformer: XYZ
           Queue Size: 10
@@ -308,9 +371,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 2569
           Min Color: 0; 0; 0
-          Min Intensity: 10
           Name: Map (cloud)
           Position Transformer: XYZ
           Queue Size: 10
@@ -338,9 +399,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.100604057312012
           Min Color: 0; 0; 0
-          Min Intensity: 0.014545874670147896
           Name: Map (local)
           Position Transformer: XYZ
           Queue Size: 10
@@ -392,7 +451,7 @@ Visualization Manager:
           Head Length: 0.20000000298023224
           Length: 0.30000001192092896
           Line Style: Billboards
-          Line Width: 1
+          Line Width: 0.10000000149011612
           Name: Path (global)
           Offset:
             X: 0
@@ -400,6 +459,7 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
+          Queue Size: 10
           Radius: 0.029999999329447746
           Shaft Diameter: 0.10000000149011612
           Shaft Length: 0.10000000149011612
@@ -423,6 +483,7 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
+          Queue Size: 10
           Radius: 0.029999999329447746
           Shaft Diameter: 0.10000000149011612
           Shaft Length: 0.10000000149011612
@@ -444,9 +505,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 15.100604057312012
           Min Color: 0; 0; 0
-          Min Intensity: 0.014545874670147896
           Name: Loop closure
           Position Transformer: XYZ
           Queue Size: 10
@@ -460,15 +519,50 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz/MarkerArray
-          Enabled: true
+          Enabled: false
           Marker Topic: /lio_sam/mapping/loop_closure_constraints
           Name: Loop constraint
           Namespaces:
             {}
           Queue Size: 100
-          Value: true
+          Value: false
       Enabled: true
       Name: Mapping
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 100
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Queue Size: 10
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Arrow
+      Topic: /lio_sam/mapping/odometry
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -485,25 +579,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 143.16458129882812
+      Distance: 2.461256504058838
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.5083352327346802
-        Y: 2.730443000793457
-        Z: -6.330533981323242
+        X: 0.3560773730278015
+        Y: 0.13541576266288757
+        Z: 4.3220109939575195
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7847971320152283
+      Pitch: 1.0147968530654907
       Target Frame: base_link
-      Value: Orbit (rviz)
-      Yaw: 5.183582782745361
+      Yaw: 5.754889488220215
     Saved: ~
 Window Geometry:
   Displays:
@@ -519,5 +613,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1920
-  X: 3840
-  Y: 0
+  X: 640
+  Y: 27
