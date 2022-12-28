@@ -19,5 +19,4 @@
     
     <node name="imuFilter" pkg="lio_sam" type="imuFilter.py" />
 
-
 </launch>
