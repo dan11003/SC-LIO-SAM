@@ -17,8 +17,9 @@
 #include <gtsam/inference/Symbol.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
-
+#include <pcl/conversions.h>
 #include "Scancontext.h"
+#include "pcl/io/ply_io.h"
 
 
 using namespace gtsam;
@@ -525,6 +526,12 @@ public:
         *globalMapCloud += *globalCornerCloud;
         *globalMapCloud += *globalSurfCloud;
         pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
+        /****** daniel *****/
+        //pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
+        pcl::PCLPointCloud2 point_cloud2;
+        pcl::toPCLPointCloud2(*globalMapCloud, point_cloud2);
+        pcl::PLYWriter plywr;
+        plywr.writeBinary(savePCDDirectory + "cloudGlobal.ply", point_cloud2);
         cout << "****************************************************" << endl;
         cout << "Saving map to pcd files completed" << endl;
     }

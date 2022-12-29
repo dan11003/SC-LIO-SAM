@@ -163,6 +163,7 @@ public:
 
         std::lock_guard<std::mutex> lock1(imuLock);
         imuQueue.push_back(thisImu);
+        /* // Uncomment for debugging
 
          //debug IMU data
          cout << std::setprecision(6);
@@ -179,7 +180,7 @@ public:
          tf::quaternionMsgToTF(thisImu.orientation, orientation);
          tf::Matrix3x3(orientation).getRPY(imuRoll, imuPitch, imuYaw);
          cout << "IMU roll pitch yaw: " << endl;
-         cout << "roll: " << imuRoll << ", pitch: " << imuPitch << ", yaw: " << imuYaw << endl << endl;
+         cout << "roll: " << imuRoll << ", pitch: " << imuPitch << ", yaw: " << imuYaw << endl << endl;*/
     }
 
     void odometryHandler(const nav_msgs::Odometry::ConstPtr& odometryMsg)
