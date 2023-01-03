@@ -586,15 +586,24 @@ public:
 
     void loopClosureThread()
     {
-        if (loopClosureEnableFlag == false)
+
+        if (!loopClosureEnableFlagRS && !loopClosureEnableFlagRS)
             return;
 
         ros::Rate rate(loopClosureFrequency);
         while (ros::ok())
         {
+        //cout << "loopClosureEnableFlagSC: " << loopClosureEnableFlagSC << endl;
+        //cout << "loopClosureEnableFlagRS: " << loopClosureEnableFlagRS << endl;
             rate.sleep();
-            performRSLoopClosure();
-            performSCLoopClosure(); // giseop
+            if(loopClosureEnableFlagRS){
+                cout << "performRSLoopClosure() - " <<loopClosureEnableFlagRS << endl;
+	        performRSLoopClosure();
+	    }
+	    if(loopClosureEnableFlagSC){
+	        cout << "performSCLoopClosure() - " << loopClosureEnableFlagSC << endl;
+                performSCLoopClosure(); // giseop
+            }
             visualizeLoopClosure();
         }
     }
