@@ -140,7 +140,7 @@ public:
     float surroundingKeyframeSearchRadius;
     
     // Loop closure
-    bool  loopClosureEnableFlag;
+    bool  loopClosureEnableFlagSC, loopClosureEnableFlagRS;
     float loopClosureFrequency;
     int   surroundingKeyframeSize;
     float historyKeyframeSearchRadius;
@@ -236,7 +236,10 @@ public:
         nh.param<float>("lio_sam/surroundingKeyframeDensity", surroundingKeyframeDensity, 1.0);
         nh.param<float>("lio_sam/surroundingKeyframeSearchRadius", surroundingKeyframeSearchRadius, 50.0);
 
-        nh.param<bool>("lio_sam/loopClosureEnableFlag", loopClosureEnableFlag, false);
+        nh.param<bool>("lio_sam/loopClosureEnableFlagSC", loopClosureEnableFlagSC, true);
+        nh.param<bool>("lio_sam/loopClosureEnableFlagRS", loopClosureEnableFlagRS, true);
+        cout << "loopClosureEnableFlagSC" << loopClosureEnableFlagSC << endl;
+        cout << "loopClosureEnableFlagRS" << loopClosureEnableFlagRS << endl;
         nh.param<float>("lio_sam/loopClosureFrequency", loopClosureFrequency, 1.0);
         nh.param<int>("lio_sam/surroundingKeyframeSize", surroundingKeyframeSize, 50);
         nh.param<float>("lio_sam/historyKeyframeSearchRadius", historyKeyframeSearchRadius, 10.0);
