@@ -20,7 +20,7 @@ lio_sam:
   
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
-  savePCDDirectory: "/home/daniel/Documents/scliosam/data/"  # use global path, and end with "/" 
+  savePCDDirectory: "/home/daniel/Documents/scliosam/"  # use global path, and end with "/"
 
   # Sensor Settings
   sensor: velodyne                            # lidar sensor type, 'velodyne' or 'ouster' or 'livox'

@@ -62,6 +62,29 @@ typedef pcl::PointXYZI PointType;
 
 enum class SensorType { MULRAN, VELODYNE, OUSTER };
 
+/* Returns created subfolder with timestamp */
+std::string CreateFolder(const std::string& basePath){
+
+  auto t = std::time(nullptr);
+  auto tm = *std::localtime(&t);
+
+  //const std::string timeStr(std::put_time(&tm, "%Y-%m-%d_%H-%M"));
+
+  std::time_t now = std::time(NULL);
+  std::tm * ptm = std::localtime(&now);
+  char buffer[32];
+  // Format: Mo, 15.06.2009 20:20:00
+  std::strftime(buffer, 32, "%a_%Y.%m.%d_%H:%M:%S", ptm);
+
+
+  const std::string dir = basePath + "/" + std::string(buffer) + std::string("/");
+  std::cout << dir << std::endl;
+  if (boost::filesystem::create_directories(dir)){
+      std::cout << "Created new directory" << "\n";
+  }
+  return dir;
+}
+
 class ParamServer
 {
 public:
@@ -174,6 +197,7 @@ public:
 
         nh.param<bool>("lio_sam/savePCD", savePCD, false);
         nh.param<std::string>("lio_sam/savePCDDirectory", savePCDDirectory, "/Downloads/LOAM/");
+        savePCDDirectory = CreateFolder(savePCDDirectory);
 
         std::string sensorStr;
         nh.param<std::string>("lio_sam/sensor", sensorStr, "");
