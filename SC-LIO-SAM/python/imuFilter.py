@@ -22,7 +22,7 @@ class ImuFilter:
     #print(data.header.stamp)
     now = rospy.get_rostime()
     now.secs = data_tmp.header.stamp.secs
-    now.nsecs = data_tmp.header.stamp.nsecs*1000
+    now.nsecs = data_tmp.header.stamp.nsecs #*1000
     data_tmp.header.stamp = now
     
     if not self.first:  
