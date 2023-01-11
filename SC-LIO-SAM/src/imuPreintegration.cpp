@@ -133,6 +133,7 @@ public:
         static nav_msgs::Path imuPath;
         static double last_path_time = -1;
         double imuTime = imuOdomQueue.back().header.stamp.toSec();
+        std::cout << imuTime - last_path_time  << std::endl;
         if (imuTime - last_path_time > 0.1)
         {
             last_path_time = imuTime;
