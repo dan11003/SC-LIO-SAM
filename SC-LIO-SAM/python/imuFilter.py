@@ -19,7 +19,7 @@ class ImuFilter:
 
   def callback(self,data):
     data_tmp = data
-    #print(data.header.stamp)
+    print(data.header.stamp)
     now = rospy.get_rostime()
     now.secs = data_tmp.header.stamp.secs
     now.nsecs = data_tmp.header.stamp.nsecs #*1000

@@ -159,7 +159,20 @@ public:
 
     void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg)
     {
+        std::cerr << "test "<< std::endl;
         sensor_msgs::Imu thisImu = imuConverter(*imuMsg);
+
+
+        static sensor_msgs::Imu prevImu = thisImu;
+        const ros::Duration dt = thisImu.header.stamp - prevImu.header.stamp;
+        std::cout << "dt: " << dt << std::endl;
+        if(dt < ros::Duration(0.00001)){
+            std::cout << "ZERO DT: " << dt << std::endl;
+            return;
+        }
+        else{
+            prevImu = thisImu;
+        }
 
         std::lock_guard<std::mutex> lock1(imuLock);
         imuQueue.push_back(thisImu);

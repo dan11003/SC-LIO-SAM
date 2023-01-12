@@ -1,7 +1,7 @@
 <launch>
 
     <arg name="project" default="lio_sam"/>
-    
+
     <!-- Parameters -->
     <rosparam file="$(find lio_sam)/config/params_structor_indoor.yaml" command="load" />
 
@@ -17,6 +17,6 @@
     <!--- Run Rviz-->
     <include file="$(find lio_sam)/launch/include/module_rviz.launch" />
     
-    <node name="imuFilter" pkg="lio_sam" type="imuFilter.py" />
+    <!--node name="imuFilter" pkg="lio_sam" type="imuFilter.py" /-->
 
 </launch>

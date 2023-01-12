@@ -456,9 +456,22 @@ public:
 
     void imuHandler(const sensor_msgs::Imu::ConstPtr& imu_raw)
     {
+        ROS_INFO("callback");
         std::lock_guard<std::mutex> lock(mtx);
 
         sensor_msgs::Imu thisImu = imuConverter(*imu_raw);
+
+        static sensor_msgs::Imu prevImu = thisImu;
+        const ros::Duration dtStamp = thisImu.header.stamp - prevImu.header.stamp;
+        std::cout << "dt: " << dtStamp << std::endl;
+        if(dtStamp < ros::Duration(0.00001)){
+            std::cout << "ZERO DT: " << dtStamp << std::endl;
+            return;
+        }
+        else{
+            std::cout << "DT: " << dtStamp << std::endl;
+            prevImu = thisImu;
+        }
 
         imuQueOpt.push_back(thisImu);
         imuQueImu.push_back(thisImu);
@@ -468,6 +481,7 @@ public:
 
         double imuTime = ROS_TIME(&thisImu);
         double dt = (lastImuT_imu < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_imu);
+        cout << "dt " << dt << endl;
         lastImuT_imu = imuTime;
 
         // integrate this single imu message
