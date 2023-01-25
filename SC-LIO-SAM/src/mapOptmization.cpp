@@ -31,6 +31,10 @@ using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
 using symbol_shorthand::G; // GPS pose
 
+bool keep_running = true;
+int total_frames = 0;
+ros::Time tLastCallback;
+
 void SavePosesHomogeneousBALM(gtsam::Values _estimates, const std::vector<double>& stamps_vek, const std::string& _filename){
     std::fstream stream(_filename.c_str(), fstream::out);
     std::cout << "isam size: " <<_estimates.size() << std::endl;;
@@ -387,6 +391,10 @@ public:
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
     {
 
+
+      tLastCallback = ros::Time::now();
+      total_frames ++;
+
         // extract time stamp
         timeLaserInfoStamp = msgIn->header.stamp;
         timeLaserInfoCur = msgIn->header.stamp.toSec();
@@ -424,7 +432,6 @@ public:
 
             publishFrames();
         }
-        stamps.push_back(msgIn->header.stamp.toSec());
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr& gpsMsg)
@@ -502,8 +509,12 @@ public:
     {
         //
         ros::Rate rate(0.2);
-        while (ros::ok()){
+        while (ros::ok() && keep_running){
             rate.sleep();
+            if( keep_running == false){
+              std::cout << "Terminate loop closure" << std::endl;
+              return;
+            }
             publishGlobalMap();
         }
 
@@ -623,7 +634,7 @@ public:
             return;
 
         ros::Rate rate(loopClosureFrequency);
-        while (ros::ok())
+        while (ros::ok() && keep_running)
         {
             //cout << "loopClosureEnableFlagSC: " << loopClosureEnableFlagSC << endl;
             //cout << "loopClosureEnableFlagRS: " << loopClosureEnableFlagRS << endl;
@@ -638,6 +649,7 @@ public:
             }
             visualizeLoopClosure();
         }
+        std::cout << "Terminate loop closure" << std::endl;
     }
 
     void loopInfoHandler(const std_msgs::Float64MultiArray::ConstPtr& loopMsg)
@@ -1842,6 +1854,7 @@ public:
         pcl::copyPointCloud(*laserCloudSurfLastDS,    *thisSurfKeyFrame);
 
         // save key frame cloud
+        stamps.push_back(timeLaserInfoStamp.toSec());
         cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
         surfCloudKeyFrames.push_back(thisSurfKeyFrame);
 
@@ -2045,6 +2058,11 @@ public:
             pubPath.publish(globalPath);
         }
     }
+    void SaveAll(){
+      std::cout << "Save output to: " << savePCDDirectory << std::endl;
+      SaveData(savePCDDirectory + "odom/", cornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps);
+
+    }
 };
 
 
@@ -2059,10 +2077,22 @@ int main(int argc, char** argv)
     std::thread loopthread(&mapOptimization::loopClosureThread, &MO);
     std::thread visualizeMapThread(&mapOptimization::visualizeGlobalMapThread, &MO);
 
-    ros::spin();
+    ros::Rate r(100); // 10 hz
+
+      while(ros::ok() && keep_running){
+        ros::spinOnce();
+        r.sleep();
+        if( total_frames > 0 && (ros::Time::now() -  tLastCallback > ros::Duration(2.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
+          keep_running = false;
+          std::cout << "Ending SLAM - Nothing to process" << std::endl;
+          break;
+        }
+      }
 
     loopthread.join();
     visualizeMapThread.join();
+
+    MO.SaveAll();
 
     return 0;
 }

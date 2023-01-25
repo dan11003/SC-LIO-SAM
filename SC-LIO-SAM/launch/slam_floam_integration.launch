@@ -7,7 +7,7 @@
     <rosparam file="$(arg slam_param_file)" command="load" />
 
     <!-- Start node -->
-    <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="true"/>
+    <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="false"/>
    
 
 </launch>
