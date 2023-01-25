@@ -386,6 +386,7 @@ public:
 
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
     {
+
         // extract time stamp
         timeLaserInfoStamp = msgIn->header.stamp;
         timeLaserInfoCur = msgIn->header.stamp.toSec();
@@ -396,12 +397,15 @@ public:
         pcl::fromROSMsg(msgIn->cloud_surface, *laserCloudSurfLast);
         pcl::fromROSMsg(msgIn->cloud_deskewed,  *laserCloudRaw); // giseop
         laserCloudRawTime = cloudInfo.header.stamp.toSec(); // giseop save node time
+        std::cout << "recieved: " << laserCloudCornerLast->size() << ", " << laserCloudSurfLast->size() <<", " << laserCloudRaw->size() << std::endl;
+        cout << "time " << msgIn->header.stamp << endl;
 
         std::lock_guard<std::mutex> lock(mtx);
 
         static double timeLastProcessing = -1;
         if (timeLaserInfoCur - timeLastProcessing >= mappingProcessInterval)
         {
+
             timeLastProcessing = timeLaserInfoCur;
 
             updateInitialGuess();
@@ -410,7 +414,7 @@ public:
 
             downsampleCurrentScan();
 
-            scan2MapOptimization();
+            //scan2MapOptimization();
 
             saveKeyFramesAndFactor();
 
@@ -1004,9 +1008,9 @@ public:
         markerNode.ns = "loop_nodes";
         markerNode.id = 0;
         markerNode.pose.orientation.w = 1;
-        markerNode.scale.x = 0.3; markerNode.scale.y = 0.3; markerNode.scale.z = 0.3;
+        markerNode.scale.x = 0.1; markerNode.scale.y = 0.1; markerNode.scale.z = 0.1;
         markerNode.color.r = 0; markerNode.color.g = 0.8; markerNode.color.b = 1;
-        markerNode.color.a = 1;
+        markerNode.color.a = 0.4;
         // loop edges
         visualization_msgs::Marker markerEdge;
         markerEdge.header.frame_id = odometryFrame;
@@ -1016,9 +1020,9 @@ public:
         markerEdge.ns = "loop_edges";
         markerEdge.id = 1;
         markerEdge.pose.orientation.w = 1;
-        markerEdge.scale.x = 0.1; markerEdge.scale.y = 0.1; markerEdge.scale.z = 0.1;
+        markerEdge.scale.x = 0.03; markerEdge.scale.y = 0.03; markerEdge.scale.z = 0.03;
         markerEdge.color.r = 0.9; markerEdge.color.g = 0.9; markerEdge.color.b = 0;
-        markerEdge.color.a = 1;
+        markerEdge.color.a = 0.4;
 
         for (auto it = loopIndexContainer.begin(); it != loopIndexContainer.end(); ++it)
         {
