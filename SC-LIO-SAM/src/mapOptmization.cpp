@@ -405,8 +405,9 @@ public:
         pcl::fromROSMsg(msgIn->cloud_surface, *laserCloudSurfLast);
         pcl::fromROSMsg(msgIn->cloud_deskewed,  *laserCloudRaw); // giseop
         laserCloudRawTime = cloudInfo.header.stamp.toSec(); // giseop save node time
-        std::cout << "recieved: " << laserCloudCornerLast->size() << ", " << laserCloudSurfLast->size() <<", " << laserCloudRaw->size() << std::endl;
-        cout << "time " << msgIn->header.stamp << endl;
+        //std::cout << "recieved: " << laserCloudCornerLast->size() << ", " << laserCloudSurfLast->size() <<", " << laserCloudRaw->size() << std::endl;
+
+        //cout << "time " << msgIn->header.stamp << endl;
 
         std::lock_guard<std::mutex> lock(mtx);
 
