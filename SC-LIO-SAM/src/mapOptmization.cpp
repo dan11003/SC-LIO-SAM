@@ -31,6 +31,9 @@ using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
 using symbol_shorthand::G; // GPS pose
 
+using namespace std;
+
+
 bool keep_running = true;
 int total_frames = 0;
 ros::Time tLastCallback;
@@ -40,11 +43,12 @@ void SavePosesHomogeneousBALM(gtsam::Values _estimates, const std::vector<double
     std::cout << "isam size: " <<_estimates.size() << std::endl;;
     std::cout << "stamps size: " <<stamps_vek.size() << std::endl;
     unsigned int counter = 0;
-    for(const auto& key_value: _estimates) {
+    for(int i = 0 ; i<_estimates.size(); i++) {
+      const Pose3& pose = _estimates.at<gtsam::Pose3>(i);
 
-        auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-        if (!p) continue;
-        const Pose3& pose = p->value();
+        //auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+        //if (!p) continue;
+        //const Pose3& pose = p->value();
         const Eigen::MatrixXd m = pose.matrix();
         //cout << std::fixed() << m.rows() << " x " << m.cols() << endl;
         stream <<std::fixed <<m(0,0) <<  "," << m(0,1) <<  "," << m(0,2) <<  "," << m(0,3) <<  "," << endl <<
@@ -62,11 +66,13 @@ void saveOptimizedVerticesKITTIformat(gtsam::Values _estimates, std::string _fil
     // ref from gtsam's original code "dataset.cpp"
     std::fstream stream(_filename.c_str(), fstream::out);
 
-    for(const auto& key_value: _estimates) {
-        auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-        if (!p) continue;
+    for(int i = 0 ; i<_estimates.size(); i++) {
+      const Pose3& pose = _estimates.at<gtsam::Pose3>(i);
 
-        const Pose3& pose = p->value();
+        //auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+        //if (!p) continue;
+        //const Pose3& pose = p->value();
+
 
 
         Point3 t = pose.translation();

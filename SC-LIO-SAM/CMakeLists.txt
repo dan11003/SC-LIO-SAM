@@ -76,7 +76,7 @@ link_directories(
 
 
 # Range Image Projection
-#add_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)
+#Zadd_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)
 #add_dependencies(${PROJECT_NAME}_imageProjection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 #target_link_libraries(${PROJECT_NAME}_imageProjection ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
@@ -86,13 +86,25 @@ link_directories(
 #target_link_libraries(${PROJECT_NAME}_featureExtraction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 
 # Mapping Optimization
-add_executable(${PROJECT_NAME}_mapOptmization
-  src/mapOptmization.cpp
+
+
+
+set (${PROJECT_NAME}_LIB_SRCS
+  src/utility.cpp
   src/Scancontext.cpp
 )
+
+
+add_library(${PROJECT_NAME} ${${PROJECT_NAME}_LIB_SRCS})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} )
+
+
+add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
 add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_compile_options(${PROJECT_NAME}_mapOptmization PRIVATE ${OpenMP_CXX_FLAGS})
-target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
+target_link_libraries(${PROJECT_NAME}_mapOptmization ${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_REGEX_LIBRARY})
+
 
 # IMU Preintegration
 #add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
