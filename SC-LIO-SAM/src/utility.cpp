@@ -65,13 +65,13 @@ void SaveData(const std::string& directory,
 std::vector<Eigen::Affine3d> poses;
 std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   for(int i = 0 ; i<isamCurrentEstimate.size(); i++) {
-    gtsam::Pose3 asd = isamCurrentEstimate.at<gtsam::Pose3>(i);
+    gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
 
     /*auto p = dynamic_cast<const GenericValue<Pose3>*>(isamCurrentEstimate.at<Pose3>(i).);
     if (!p) continue;
-    const Pose3& pose = p->value();
+    const Pose3& pose = p->value();*/
     const Eigen::Affine3d m(pose.matrix());
-    poses.push_back(std::move(m));*/
+    poses.push_back(std::move(m));
   }
 
   for(int i = 0 ; i <cornerCloudKeyFrames.size() ; i++){
