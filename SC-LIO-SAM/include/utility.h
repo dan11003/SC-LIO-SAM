@@ -243,7 +243,7 @@ public:
         nh.param<float>("lio_sam/poseCovThreshold", poseCovThreshold, 25.0);
 
         nh.param<bool>("lio_sam/savePCD", savePCD, false);
-        nh.param<std::string>("lio_sam/savePCDDirectory", savePCDDirectory, "/Downloads/LOAM/");
+        nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
         savePCDDirectory = CreateFolder(savePCDDirectory);
 
         std::string sensorStr;
