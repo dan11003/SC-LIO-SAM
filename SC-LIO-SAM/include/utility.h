@@ -124,9 +124,8 @@ std::string CreateFolder(const std::string& basePath){
 
 
   const std::string dir = basePath + "/SC_" + std::string(buffer) + std::string("/");
-  std::cout << dir << std::endl;
   if (boost::filesystem::create_directories(dir)){
-      std::cout << "Created new directory" << "\n";
+      std::cout << "SC-LIO-SAM - Created new output directory: " << dir << std::endl;
   }
   return dir;
 }

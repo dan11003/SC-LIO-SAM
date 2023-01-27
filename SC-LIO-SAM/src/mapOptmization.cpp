@@ -647,11 +647,11 @@ public:
             //cout << "loopClosureEnableFlagRS: " << loopClosureEnableFlagRS << endl;
             rate.sleep();
             if(loopClosureEnableFlagRS){
-                cout << "performRSLoopClosure() - " <<loopClosureEnableFlagRS << endl;
+                //cout << "performRSLoopClosure() - " <<loopClosureEnableFlagRS << endl;
                 performRSLoopClosure();
             }
             if(loopClosureEnableFlagSC){
-                cout << "performSCLoopClosure() - " << loopClosureEnableFlagSC << endl;
+                //cout << "performSCLoopClosure() - " << loopClosureEnableFlagSC << endl;
                 performSCLoopClosure(); // giseop
             }
             visualizeLoopClosure();
