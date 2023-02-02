@@ -107,6 +107,12 @@ void SaveData(const std::string& directory,
               gtsam::Values& isamCurrentEstimate,
               const std::vector<double>& stamps);
 
+void SavePosesHomogeneousBALM(
+    const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds,
+    const std::vector<Eigen::Affine3d>& poses,
+    const std::string& directory,
+    double downsample_size);
+
 
 /* Returns created subfolder with timestamp */
 std::string CreateFolder(const std::string& basePath){

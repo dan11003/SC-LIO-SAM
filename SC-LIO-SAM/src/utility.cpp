@@ -84,5 +84,31 @@ std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
 
   SaveOdom(directory+"odom/", poses, stamps, clouds);
   SaveMerged(clouds, poses, directory, 0.3);
+  SavePosesHomogeneousBALM(clouds, poses, directory+"balm/", 0.3);
+}
+void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds, const std::vector<Eigen::Affine3d>& poses, const std::string& directory, double downsample_size){
+    boost::filesystem::create_directories(directory);
+    const std::string filename = directory + "alidarPose.csv";
+    std::fstream stream(filename.c_str(), std::fstream::out);
+    std::cout << "Save BALM to:\n" << directory << std::endl << std::endl;
+    /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
+    std::cout << "Saving poses size: " SavePosesHomogeneousBALM<<poses.size() << std::endl;*/
+    pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
+
+
+    for(int i = 0; i < poses.size() ; i++) {
+        ros::Time tRos;
+        pcl_conversions::fromPCL(clouds[i]->header.stamp, tRos);
+        const double time = tRos.toSec();
+        const Eigen::MatrixXd m = poses[i].matrix();
+
+        stream <<std::fixed <<m(0,0) <<  "," << m(0,1) <<  "," << m(0,2) <<  "," << m(0,3) <<  "," << endl <<
+                                m(1,0) <<  "," << m(1,1) <<  "," << m(1,2) <<  "," << m(1,3) <<  "," << endl <<
+                                m(2,0) <<  "," << m(2,1) <<  "," << m(2,2) <<  "," << m(2,3) <<  "," << endl <<
+                                m(3,0) <<  "," << m(3,1) <<  "," << m(3,2) <<  "," << time <<  "," << endl;
+        const std::string pcdPath = directory + std::string("full") + std::to_string(i) + ".pcd";
+        pcl::io::savePCDFileBinary(pcdPath, *clouds[i]);
+    }
 }
 
