@@ -1,0 +1,17 @@
+<launch>
+
+    <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml"/>
+    <arg name="project" default="lio_sam"/>
+    
+    <!-- Parameters -->
+    <rosparam file="$(arg slam_param_file)" command="load" />
+
+    <!-- Start node -->
+    <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="false"/>
+
+    <include file="$(find lio_sam)/launch/include/module_navsat.launch"/>
+
+    <include file="$(find lio_sam)/launch/include/module_robot_state_publisher.launch"/>
+   
+
+</launch>
