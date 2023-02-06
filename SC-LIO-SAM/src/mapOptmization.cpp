@@ -519,18 +519,21 @@ public:
         while (ros::ok() && keep_running){
             rate.sleep();
             if( keep_running == false){
-              std::cout << "Terminate loop closure" << std::endl;
+              std::cout << "Terminate vsualization" << std::endl;
               return;
             }
             publishGlobalMap();
         }
 
-        if (savePCD == false)
+        if (export_pcd == false){
+          cout << "\"SLAM\" - Saving disabled " << endl;
             return;
+        }
+        cout << "export_pcd: " << export_pcd  << ", export_pcd: " << export_pcd << ", save_BALM: " << save_BALM << endl;
 
         // save pose graph (runs when programe is closing)
-        cout << "****************************************************" << endl;
-        cout << "Saving the posegraph ..." << endl; // giseop
+        cout << "\"SLAM\" - ****************************************************" << endl;
+        cout << "\"SLAM\" - Saving the posegraph ..." << endl; // giseop
 
         for(auto& _line: vertices_str)
             pgSaveStream << _line << std::endl;
@@ -543,8 +546,12 @@ public:
 
         const std::string kitti_format_pg_filename {savePCDDirectory + "optimized_poses.txt"};
         const std::string BALM_format_pg_filename {saveNodePCDDirectory + "alidarPose.csv"};
-        saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
+        if(save_Posegraph){
+          saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
+        }
+        if(save_BALM){
         SavePosesHomogeneousBALM(isamCurrentEstimate, stamps, BALM_format_pg_filename);
+        }
 
 
         // save map
@@ -2066,7 +2073,7 @@ public:
         }
     }
     void SaveAll(){
-      std::cout << "Save output to: " << savePCDDirectory << std::endl;
+      std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
       SaveData(savePCDDirectory + "odom/", cornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps);
 
     }
@@ -2091,7 +2098,7 @@ int main(int argc, char** argv)
         r.sleep();
         if( total_frames > 0 && (ros::Time::now() -  tLastCallback > ros::Duration(2.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
           keep_running = false;
-          std::cout << "Ending SLAM - Nothing to process" << std::endl;
+          std::cout << "\"SLAM\" - Nothing to process, closing down" << std::endl;
           break;
         }
       }

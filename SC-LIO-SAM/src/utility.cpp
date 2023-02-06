@@ -4,14 +4,14 @@ void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const
   boost::filesystem::create_directories(directory);
   pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
-  std::cout << "Save merged point cloud to:\n" << directory << std::endl <<  std::endl;
+  std::cout << "\"SLAM\" - Save merged point cloud to: " << directory << std::endl <<  std::endl;
 
   for(int i = 0; i < poses.size() ; i++) {
       pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
       pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
       *merged_transformed += tmp_transformed;
   }
-  cout << "Downsample point cloud resolution " << downsample_size << endl;
+  cout << "\"SLAM\" - Downsample point cloud resolution " << downsample_size << endl;
 
 
   pcl::VoxelGrid<pcl::PointXYZI> sor;
@@ -24,7 +24,7 @@ void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const
     const std::string path_downsampled = directory + std::string("floam_merged_downsampled_leaf_") + std::to_string(downsample_size) + ".pcd";
     pcl::io::savePCDFileBinary(path_downsampled, merged_downsamapled);
   }else{
-    std::cout << "No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
+    std::cout << "\"SLAM\" - No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
   }
 }
 
@@ -36,7 +36,7 @@ void SaveOdom(
 
   boost::filesystem::create_directories(dump_directory);
 
-  std::cout << "Save odom to:\n" << dump_directory << std::endl << std::endl;
+  std::cout << "\"SLAM\" - Save odom to: " << dump_directory << std::endl << std::endl;
   //std::cout << "Save clouds: " << clouds.size() << std::endl;
   for(int i = 0; i < clouds.size(); i++) {
 
@@ -80,7 +80,7 @@ std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
     *cld_tmp += *edgeCloudKeyFrames[i];
     clouds.push_back(cld_tmp);
   }
-  cout <<"Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
+  cout <<"\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
 
   SaveOdom(directory+"odom/", poses, stamps, clouds);
   SaveMerged(clouds, poses, directory, 0.3);
@@ -90,7 +90,7 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
     boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
-    std::cout << "Save BALM to:\n" << directory << std::endl << std::endl;
+    std::cout << "\"SLAM\" - Save BALM to: " << directory << std::endl << std::endl;
     /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
     std::cout << "Saving poses size: " SavePosesHomogeneousBALM<<poses.size() << std::endl;*/
     pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());

@@ -164,8 +164,11 @@ public:
     float poseCovThreshold;
 
     // Save pcd
-    bool savePCD;
+    bool export_pcd = false;
     string savePCDDirectory;
+    bool save_Posegraph = false;
+    bool save_BALM = false;
+    bool save_odom = false;
 
     // Velodyne Sensor Configuration: Velodyne
     SensorType sensor;
@@ -247,7 +250,12 @@ public:
         nh.param<float>("lio_sam/gpsCovThreshold", gpsCovThreshold, 2.0);
         nh.param<float>("lio_sam/poseCovThreshold", poseCovThreshold, 25.0);
 
-        nh.param<bool>("lio_sam/savePCD", savePCD, false);
+        nh.param<bool>("/slam_save_balm", save_BALM, false);
+        nh.param<bool>("/slam_save_posegraph", save_Posegraph, false);
+        nh.param<bool>("/slam_save_odom", save_odom, false);
+        nh.param<bool>("/export_slam_pcd", export_pcd, false);
+        cout << "SLAM - save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
+
         nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
         savePCDDirectory = CreateFolder(savePCDDirectory);
 
