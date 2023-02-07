@@ -99,11 +99,22 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_LIB_SRCS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} )
 
 
+
 add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
 add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_mapOptmization ${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_REGEX_LIBRARY})
+
+
+
+
+#add_executable(gps_converter src/gps_converter.cpp)
+#add_dependencies(gps_converter ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+#target_link_libraries(gps_converter ${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY}
+#    ${Boost_SYSTEM_LIBRARY}
+#    ${Boost_REGEX_LIBRARY})
+
 
 
 # IMU Preintegration

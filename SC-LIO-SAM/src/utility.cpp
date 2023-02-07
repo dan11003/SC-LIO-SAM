@@ -19,9 +19,9 @@ void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const
   sor.setLeafSize (downsample_size, downsample_size, downsample_size);
   sor.filter (merged_downsamapled);
 
-  pcl::io::savePCDFileBinary(directory + std::string("floam_merged.pcd"), *merged_transformed);
+  pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_.pcd"), *merged_transformed);
   if(!merged_downsamapled.empty()){
-    const std::string path_downsampled = directory + std::string("floam_merged_downsampled_leaf_") + std::to_string(downsample_size) + ".pcd";
+    const std::string path_downsampled = directory + std::string("sc-lio-sam_merged_downsampled_leaf_") + std::to_string(downsample_size) + ".pcd";
     pcl::io::savePCDFileBinary(path_downsampled, merged_downsamapled);
   }else{
     std::cout << "\"SLAM\" - No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
@@ -59,7 +59,10 @@ void SaveData(const std::string& directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
               std::vector<pcl::PointCloud<PointType>::Ptr> edgeCloudKeyFrames,
               gtsam::Values& isamCurrentEstimate,
-              const std::vector<double>& stamps){
+              const std::vector<double>& stamps,
+              bool save_balm,
+              bool save_odom,
+              bool save_posegraph){
 
 
 std::vector<Eigen::Affine3d> poses;
@@ -82,9 +85,14 @@ std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   }
   cout <<"\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
 
-  SaveOdom(directory+"odom/", poses, stamps, clouds);
+  if(save_odom)
+    SaveOdom(directory+"odom/", poses, stamps, clouds);
+  if(save_balm)
+    SavePosesHomogeneousBALM(clouds, poses, directory+"balm/", 0.3);
+  if(save_posegraph){
+    std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
+  }
   SaveMerged(clouds, poses, directory, 0.3);
-  SavePosesHomogeneousBALM(clouds, poses, directory+"balm/", 0.3);
 }
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds, const std::vector<Eigen::Affine3d>& poses, const std::string& directory, double downsample_size){
     boost::filesystem::create_directories(directory);

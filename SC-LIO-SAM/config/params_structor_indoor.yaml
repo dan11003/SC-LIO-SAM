@@ -1,22 +1,25 @@
+
 lio_sam:
 
   # Topics
-  pointCloudTopic: "velodyne_points"               # Point cloud data
-  imuTopic: "imu/data"                         # IMU data
-  odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  #pointCloudTopic: "velodyne_points"               # Point cloud data
+  #imuTopic: "imu/data"                         # IMU data
+  #odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
+  gpsTopic: "/odometry/navsat"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
   # Frames
-  lidarFrame: "base_link"
-  baselinkFrame: "base_link"
+  lidarFrame: "base_link_scliosam"
+  baselinkFrame: "base_link_scliosam"
   odometryFrame: "odom"
   mapFrame: "map"
 
   # GPS Settings
+  use_gps: true                              # Stäng av gps
+  noise_scaling_factor: 5.0                   # Vikta ner påverkan av gps
   useImuHeadingInitialization: true           # if using GPS data, set to "true"
   useGpsElevation: false                      # if GPS elevation is bad, set to "false"
-  gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
-  poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
+  gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data. Används om gps felet är oftast inom sqrt(gpsCovThreshold>
+  poseCovThreshold: 25.0                      # m^2, threshold for using GPS data. När drift är större än sqrt(25) skall gps integreras.
 
   # Sensor Settings
   sensor: velodyne                            # lidar sensor type, 'velodyne' or 'ouster' or 'livox'

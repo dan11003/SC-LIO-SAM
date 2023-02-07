@@ -260,7 +260,10 @@ public:
         pubPath                     = nh.advertise<nav_msgs::Path>("lio_sam/mapping/path", 1);
 
         subCloud = nh.subscribe<lio_sam::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
-        subGPS   = nh.subscribe<nav_msgs::Odometry> (gpsTopic, 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
+        cout << "use:gps: " << use_gps << ", scaling factor: " << gps_noise_scaling_factor << endl;
+        if(use_gps){
+          subGPS   = nh.subscribe<nav_msgs::Odometry> (gpsTopic, 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
+        }
         subLoop  = nh.subscribe<std_msgs::Float64MultiArray>("lio_loop/loop_closure_detection", 1, &mapOptimization::loopInfoHandler, this, ros::TransportHints().tcpNoDelay());
 
         pubHistoryKeyFrames   = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/icp_loop_closure_history_cloud", 1);
@@ -533,7 +536,7 @@ public:
 
         // save pose graph (runs when programe is closing)
         cout << "\"SLAM\" - ****************************************************" << endl;
-        cout << "\"SLAM\" - Saving the posegraph ..." << endl; // giseop
+        cout << "\"SLAM\" - Saving g2o graph..." << endl; // giseop
 
         for(auto& _line: vertices_str)
             pgSaveStream << _line << std::endl;
@@ -549,9 +552,9 @@ public:
         if(save_Posegraph){
           saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
         }
-        if(save_BALM){
+        /*if(save_BALM){
         SavePosesHomogeneousBALM(isamCurrentEstimate, stamps, BALM_format_pg_filename);
-        }
+        }*/
 
 
         // save map
@@ -1690,6 +1693,7 @@ public:
 
     void addGPSFactor()
     {
+
         if (gpsQueue.empty())
             return;
 
@@ -1758,9 +1762,10 @@ public:
 
                 gtsam::Vector Vector3(3);
                 Vector3 << max(noise_x, 1.0f), max(noise_y, 1.0f), max(noise_z, 1.0f);
-                noiseModel::Diagonal::shared_ptr gps_noise = noiseModel::Diagonal::Variances(Vector3);
+                noiseModel::Diagonal::shared_ptr gps_noise = noiseModel::Diagonal::Variances(Vector3*gps_noise_scaling_factor);
                 gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
-                gtSAMgraph.add(gps_factor);
+
+                 gtSAMgraph.add(gps_factor);
 
                 aLoopIsClosed = true;
                 break;
@@ -1984,7 +1989,7 @@ public:
         static tf::TransformBroadcaster br;
         tf::Transform t_odom_to_lidar = tf::Transform(tf::createQuaternionFromRPY(transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]),
                 tf::Vector3(transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5]));
-        tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "base_link");
+        tf::StampedTransform trans_odom_to_lidar = tf::StampedTransform(t_odom_to_lidar, timeLaserInfoStamp, odometryFrame, "base_link_scliosam");
         br.sendTransform(trans_odom_to_lidar);
 
         // Publish odometry for ROS (incremental)
@@ -2074,7 +2079,7 @@ public:
     }
     void SaveAll(){
       std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
-      SaveData(savePCDDirectory + "odom/", cornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps);
+      SaveData(savePCDDirectory , cornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps, save_BALM, save_odom, save_Posegraph);
 
     }
 };

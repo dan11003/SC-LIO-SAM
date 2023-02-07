@@ -12,6 +12,9 @@
     <include file="$(find lio_sam)/launch/include/module_navsat.launch"/>
 
     <include file="$(find lio_sam)/launch/include/module_robot_state_publisher.launch"/>
+
+    <!-- for debuging, uncomment cmakelists -->
+    <!--node pkg="lio_sam" type="gps_converter" name="gps_converter" output="screen" respawn="false"/-->
    
 
 </launch>

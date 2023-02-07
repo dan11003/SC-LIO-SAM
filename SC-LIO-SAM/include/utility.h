@@ -105,7 +105,10 @@ void SaveData(const std::string& directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
               std::vector<pcl::PointCloud<PointType>::Ptr> edgeCloudKeyFrames,
               gtsam::Values& isamCurrentEstimate,
-              const std::vector<double>& stamps);
+              const std::vector<double>& stamps,
+              bool save_balm,
+              bool save_odom,
+              bool save_posegraph);
 
 void SavePosesHomogeneousBALM(
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds,
@@ -170,6 +173,9 @@ public:
     bool save_BALM = false;
     bool save_odom = false;
 
+
+    bool use_gps = false;
+    float gps_noise_scaling_factor = 1.0;
     // Velodyne Sensor Configuration: Velodyne
     SensorType sensor;
     int N_SCAN;
@@ -241,7 +247,7 @@ public:
         nh.param<std::string>("lio_sam/gpsTopic", gpsTopic, "odometry/gps");
 
         nh.param<std::string>("lio_sam/lidarFrame", lidarFrame, "base_link");
-        nh.param<std::string>("lio_sam/baselinkFrame", baselinkFrame, "base_link");
+        nh.param<std::string>("lio_sam/baselinkFrame", baselinkFrame, "base_link_scliosam");
         nh.param<std::string>("lio_sam/odometryFrame", odometryFrame, "odom");
         nh.param<std::string>("lio_sam/mapFrame", mapFrame, "map");
 
@@ -334,6 +340,8 @@ public:
         nh.param<float>("lio_sam/globalMapVisualizationSearchRadius", globalMapVisualizationSearchRadius, 1e3);
         nh.param<float>("lio_sam/globalMapVisualizationPoseDensity", globalMapVisualizationPoseDensity, 10.0);
         nh.param<float>("lio_sam/globalMapVisualizationLeafSize", globalMapVisualizationLeafSize, 1.0);
+        nh.param<bool>("lio_sam/use_gps", use_gps, false);
+        nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
 
         usleep(100);
     }
