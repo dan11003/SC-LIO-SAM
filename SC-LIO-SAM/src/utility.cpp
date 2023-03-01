@@ -2,19 +2,19 @@
 
 void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
   boost::filesystem::create_directories(directory);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
-  pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
+  pcl::PointCloud<PointType>::Ptr merged_transformed(new pcl::PointCloud<PointType>());
+  pcl::PointCloud<PointType> merged_downsamapled;
   std::cout << "\"SLAM\" - Save merged point cloud to: " << directory << std::endl <<  std::endl;
 
   for(int i = 0; i < poses.size() ; i++) {
-      pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
+      pcl::PointCloud<PointType> tmp_transformed;
       pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
       *merged_transformed += tmp_transformed;
   }
   cout << "\"SLAM\" - Downsample point cloud resolution " << downsample_size << endl;
 
 
-  pcl::VoxelGrid<pcl::PointXYZI> sor;
+  pcl::VoxelGrid<PointType> sor;
   sor.setInputCloud (merged_transformed);
   sor.setLeafSize (downsample_size, downsample_size, downsample_size);
   sor.filter (merged_downsamapled);
@@ -94,15 +94,25 @@ std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   }
   SaveMerged(clouds, poses, directory, 0.3);
 }
-void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds, const std::vector<Eigen::Affine3d>& poses, const std::string& directory, double downsample_size){
+sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame)
+{
+    sensor_msgs::PointCloud2 tempCloud;
+    pcl::toROSMsg(*thisCloud, tempCloud);
+    tempCloud.header.stamp = thisStamp;
+    tempCloud.header.frame_id = thisFrame;
+    if (thisPub->getNumSubscribers() != 0)
+        thisPub->publish(tempCloud);
+    return tempCloud;
+}
+void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds, const std::vector<Eigen::Affine3d>& poses, const std::string& directory, double downsample_size){
     boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
     std::cout << "\"SLAM\" - Save BALM to: " << directory << std::endl << std::endl;
     /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
     std::cout << "Saving poses size: " SavePosesHomogeneousBALM<<poses.size() << std::endl;*/
-    pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
+    pcl::PointCloud<PointType>::Ptr merged_transformed(new pcl::PointCloud<PointType>());
+    pcl::PointCloud<PointType> merged_downsamapled;
 
 
     for(int i = 0; i < poses.size() ; i++) {

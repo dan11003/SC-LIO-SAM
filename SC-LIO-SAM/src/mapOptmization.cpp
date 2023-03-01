@@ -150,26 +150,30 @@ public:
     std::deque<nav_msgs::Odometry> gpsQueue;
     lio_sam::cloud_info cloudInfo;
 
-    vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames;
-    vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;
+    vector<VelCurve::Ptr> cornerCloudKeyFrames;
+    vector<VelCurve::Ptr> lesscornerCloudKeyFrames;
+    vector<VelCurve::Ptr> surfCloudKeyFrames;
     
-    pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;
+    VelCurve::Ptr cloudKeyPoses3D;
     pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;
-    pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses3D;
-    pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses2D; // giseop
+    VelCurve::Ptr copy_cloudKeyPoses3D;
+    VelCurve::Ptr copy_cloudKeyPoses2D; // giseop
     pcl::PointCloud<PointTypePose>::Ptr copy_cloudKeyPoses6D;
 
-    pcl::PointCloud<PointType>::Ptr laserCloudRaw; // giseop
-    pcl::PointCloud<PointType>::Ptr laserCloudRawDS; // giseop
+    VelCurve::Ptr laserCloudRaw; // giseop
+    VelCurve::Ptr laserCloudRawDS; // giseop
     double laserCloudRawTime;
 
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerLast; // corner feature set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfLast; // surf feature set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerLastDS; // downsampled corner featuer set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS; // downsampled surf featuer set from odoOptimization
+    VelCurve::Ptr laserCloudCornerLast; // corner feature set from odoOptimization
+    VelCurve::Ptr laserCloudLessCornerLast;
+    VelCurve::Ptr laserCloudSurfLast; // surf feature set from odoOptimization
+    VelCurve::Ptr laserCloudLessCornerLastDS;
+    VelCurve::Ptr laserCloudCornerLastDS; // downsampled corner featuer set from odoOptimization
 
-    pcl::PointCloud<PointType>::Ptr laserCloudOri;
-    pcl::PointCloud<PointType>::Ptr coeffSel;
+    VelCurve::Ptr laserCloudSurfLastDS; // downsampled surf featuer set from odoOptimization
+
+    VelCurve::Ptr laserCloudOri;
+    VelCurve::Ptr coeffSel;
 
     std::vector<PointType> laserCloudOriCornerVec; // corner point holder for parallel computation
     std::vector<PointType> coeffSelCornerVec;
@@ -178,13 +182,17 @@ public:
     std::vector<PointType> coeffSelSurfVec;
     std::vector<bool> laserCloudOriSurfFlag;
 
-    map<int, pair<pcl::PointCloud<PointType>, pcl::PointCloud<PointType>>> laserCloudMapContainer;
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMap;
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMap;
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMapDS;
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMapDS;
+    map<int, pair<VelCurve, VelCurve>> laserCloudMapContainer;
+    VelCurve::Ptr laserCloudCornerFromMap;
+    VelCurve::Ptr laserCloudLessCornerFromMap;
+    VelCurve::Ptr laserCloudSurfFromMap;
+
+    VelCurve::Ptr laserCloudLessCornerFromMapDS;
+    VelCurve::Ptr laserCloudCornerFromMapDS;
+    VelCurve::Ptr laserCloudSurfFromMapDS;
 
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap;
+    pcl::KdTreeFLANN<PointType>::Ptr kdtreeLessCornerFromMap;
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap;
 
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurroundingKeyPoses;
@@ -192,6 +200,7 @@ public:
 
     pcl::VoxelGrid<PointType> downSizeFilterSC; // giseop
     pcl::VoxelGrid<PointType> downSizeFilterCorner;
+    pcl::VoxelGrid<PointType> downSizeFilterLessCorner;
     pcl::VoxelGrid<PointType> downSizeFilterSurf;
     pcl::VoxelGrid<PointType> downSizeFilterICP;
     pcl::VoxelGrid<PointType> downSizeFilterSurroundingKeyPoses; // for surrounding key poses of scan-to-map optimization
@@ -212,6 +221,7 @@ public:
     int laserCloudCornerFromMapDSNum = 0;
     int laserCloudSurfFromMapDSNum = 0;
     int laserCloudCornerLastDSNum = 0;
+    int laserCloudLessCornerLastDSNum = 0;
     int laserCloudSurfLastDSNum = 0;
 
     bool aLoopIsClosed = false;
@@ -278,6 +288,7 @@ public:
         downSizeFilterSC.setLeafSize(kSCFilterSize, kSCFilterSize, kSCFilterSize); // giseop
 
         downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
+        downSizeFilterLessCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
         downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
         downSizeFilterICP.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
         downSizeFilterSurroundingKeyPoses.setLeafSize(surroundingKeyframeDensity, surroundingKeyframeDensity, surroundingKeyframeDensity); // for surrounding key poses of scan-to-map optimization
@@ -309,25 +320,28 @@ public:
 
     void allocateMemory()
     {
-        cloudKeyPoses3D.reset(new pcl::PointCloud<PointType>());
+        cloudKeyPoses3D.reset(new VelCurve());
         cloudKeyPoses6D.reset(new pcl::PointCloud<PointTypePose>());
-        copy_cloudKeyPoses3D.reset(new pcl::PointCloud<PointType>());
-        copy_cloudKeyPoses2D.reset(new pcl::PointCloud<PointType>());
+        copy_cloudKeyPoses3D.reset(new VelCurve());
+        copy_cloudKeyPoses2D.reset(new VelCurve());
         copy_cloudKeyPoses6D.reset(new pcl::PointCloud<PointTypePose>());
 
         kdtreeSurroundingKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
         kdtreeHistoryKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
 
-        laserCloudRaw.reset(new pcl::PointCloud<PointType>()); // giseop
-        laserCloudRawDS.reset(new pcl::PointCloud<PointType>()); // giseop
+        laserCloudRaw.reset(new VelCurve()); // giseop
+        laserCloudRawDS.reset(new VelCurve()); // giseop
 
-        laserCloudCornerLast.reset(new pcl::PointCloud<PointType>()); // corner feature set from odoOptimization
-        laserCloudSurfLast.reset(new pcl::PointCloud<PointType>()); // surf feature set from odoOptimization
-        laserCloudCornerLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled corner featuer set from odoOptimization
-        laserCloudSurfLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled surf featuer set from odoOptimization
+        laserCloudCornerLast.reset(new VelCurve()); // corner feature set from odoOptimization
+        laserCloudLessCornerLast.reset(new VelCurve()); // corner feature set from odoOptimization
+        laserCloudSurfLast.reset(new VelCurve()); // surf feature set from odoOptimization
 
-        laserCloudOri.reset(new pcl::PointCloud<PointType>());
-        coeffSel.reset(new pcl::PointCloud<PointType>());
+        laserCloudCornerLastDS.reset(new VelCurve()); // downsampled corner featuer set from odoOptimization
+        laserCloudLessCornerLastDS.reset(new VelCurve()); // downsampled corner featuer set from odoOptimization
+        laserCloudSurfLastDS.reset(new VelCurve()); // downsampled surf featuer set from odoOptimization
+
+        laserCloudOri.reset(new VelCurve());
+        coeffSel.reset(new VelCurve());
 
         laserCloudOriCornerVec.resize(N_SCAN * Horizon_SCAN);
         coeffSelCornerVec.resize(N_SCAN * Horizon_SCAN);
@@ -339,12 +353,17 @@ public:
         std::fill(laserCloudOriCornerFlag.begin(), laserCloudOriCornerFlag.end(), false);
         std::fill(laserCloudOriSurfFlag.begin(), laserCloudOriSurfFlag.end(), false);
 
-        laserCloudCornerFromMap.reset(new pcl::PointCloud<PointType>());
-        laserCloudSurfFromMap.reset(new pcl::PointCloud<PointType>());
-        laserCloudCornerFromMapDS.reset(new pcl::PointCloud<PointType>());
-        laserCloudSurfFromMapDS.reset(new pcl::PointCloud<PointType>());
+        laserCloudLessCornerFromMap.reset(new VelCurve());
+        laserCloudCornerFromMap.reset(new VelCurve());
+        laserCloudSurfFromMap.reset(new VelCurve());
+
+        laserCloudCornerFromMapDS.reset(new VelCurve());
+        laserCloudLessCornerFromMapDS.reset(new VelCurve());
+        laserCloudSurfFromMapDS.reset(new VelCurve());
+
 
         kdtreeCornerFromMap.reset(new pcl::KdTreeFLANN<PointType>());
+        kdtreeLessCornerFromMap.reset(new pcl::KdTreeFLANN<PointType>());
         kdtreeSurfFromMap.reset(new pcl::KdTreeFLANN<PointType>());
 
         for (int i = 0; i < 6; ++i){
@@ -399,6 +418,8 @@ public:
 
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
     {
+        cout << "callback" << endl;
+
 
 
       tLastCallback = ros::Time::now();
@@ -411,11 +432,12 @@ public:
         // extract info and feature cloud
         cloudInfo = *msgIn;
         pcl::fromROSMsg(msgIn->cloud_corner,  *laserCloudCornerLast);
+        pcl::fromROSMsg(msgIn->cloud_less_edge,  *laserCloudLessCornerLast);
         pcl::fromROSMsg(msgIn->cloud_surface, *laserCloudSurfLast);
         pcl::fromROSMsg(msgIn->cloud_deskewed,  *laserCloudRaw); // giseop
         laserCloudRawTime = cloudInfo.header.stamp.toSec(); // giseop save node time
         //std::cout << "recieved: " << laserCloudCornerLast->size() << ", " << laserCloudSurfLast->size() <<", " << laserCloudRaw->size() << std::endl;
-
+        cout << "1" << endl;
         //cout << "time " << msgIn->header.stamp << endl;
 
         std::lock_guard<std::mutex> lock(mtx);
@@ -431,6 +453,7 @@ public:
             extractSurroundingKeyFrames();
 
             downsampleCurrentScan();
+            cout << "4" << endl;
 
             //scan2MapOptimization();
 
@@ -442,6 +465,7 @@ public:
 
             publishFrames();
         }
+        cout << "8" << endl;
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr& gpsMsg)
@@ -457,9 +481,9 @@ public:
         po->intensity = pi->intensity;
     }
 
-    pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn)
+    VelCurve::Ptr transformPointCloud(VelCurve::Ptr cloudIn, PointTypePose* transformIn)
     {
-        pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cloudOut(new VelCurve());
 
         PointType *pointFrom;
 
@@ -564,11 +588,11 @@ public:
         pcl::io::savePCDFileASCII(savePCDDirectory + "trajectory.pcd", *cloudKeyPoses3D);
         pcl::io::savePCDFileASCII(savePCDDirectory + "transformations.pcd", *cloudKeyPoses6D);
         // extract global point cloud map
-        pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalCornerCloudDS(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr globalCornerCloud(new VelCurve());
+        VelCurve::Ptr globalCornerCloudDS(new VelCurve());
+        VelCurve::Ptr globalSurfCloud(new VelCurve());
+        VelCurve::Ptr globalSurfCloudDS(new VelCurve());
+        VelCurve::Ptr globalMapCloud(new VelCurve());
         for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
             *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);
             *globalSurfCloud   += *transformPointCloud(surfCloudKeyFrames[i],    &cloudKeyPoses6D->points[i]);
@@ -605,10 +629,10 @@ public:
             return;
 
         pcl::KdTreeFLANN<PointType>::Ptr kdtreeGlobalMap(new pcl::KdTreeFLANN<PointType>());;
-        pcl::PointCloud<PointType>::Ptr globalMapKeyPoses(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalMapKeyPosesDS(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalMapKeyFrames(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalMapKeyFramesDS(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr globalMapKeyPoses(new VelCurve());
+        VelCurve::Ptr globalMapKeyPosesDS(new VelCurve());
+        VelCurve::Ptr globalMapKeyFrames(new VelCurve());
+        VelCurve::Ptr globalMapKeyFramesDS(new VelCurve());
 
         // kd-tree to find near key frames to visualize
         std::vector<int> pointSearchIndGlobalMap;
@@ -703,8 +727,8 @@ public:
         std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
 
         // extract cloud
-        pcl::PointCloud<PointType>::Ptr cureKeyframeCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr prevKeyframeCloud(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cureKeyframeCloud(new VelCurve());
+        VelCurve::Ptr prevKeyframeCloud(new VelCurve());
         {
             loopFindNearKeyframes(cureKeyframeCloud, loopKeyCur, 0);
             loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre, historyKeyframeSearchNum);
@@ -725,7 +749,7 @@ public:
         // Align clouds
         icp.setInputSource(cureKeyframeCloud);
         icp.setInputTarget(prevKeyframeCloud);
-        pcl::PointCloud<PointType>::Ptr unused_result(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr unused_result(new VelCurve());
         icp.align(*unused_result);
 
         if (icp.hasConverged() == false || icp.getFitnessScore() > historyKeyframeFitnessScore) {
@@ -738,7 +762,7 @@ public:
         // publish corrected cloud
         if (pubIcpKeyFrames.getNumSubscribers() != 0)
         {
-            pcl::PointCloud<PointType>::Ptr closed_cloud(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr closed_cloud(new VelCurve());
             pcl::transformPointCloud(*cureKeyframeCloud, *closed_cloud, icp.getFinalTransformation());
             publishCloud(&pubIcpKeyFrames, closed_cloud, timeLaserInfoStamp, odometryFrame);
         }
@@ -788,8 +812,8 @@ public:
         std::cout << "SC loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
 
         // extract cloud
-        pcl::PointCloud<PointType>::Ptr cureKeyframeCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr prevKeyframeCloud(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cureKeyframeCloud(new VelCurve());
+        VelCurve::Ptr prevKeyframeCloud(new VelCurve());
         {
             // loopFindNearKeyframesWithRespectTo(cureKeyframeCloud, loopKeyCur, 0, loopKeyPre); // giseop
             // loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre, historyKeyframeSearchNum);
@@ -815,7 +839,7 @@ public:
         // Align clouds
         icp.setInputSource(cureKeyframeCloud);
         icp.setInputTarget(prevKeyframeCloud);
-        pcl::PointCloud<PointType>::Ptr unused_result(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr unused_result(new VelCurve());
         icp.align(*unused_result);
         // giseop
         // TODO icp align with initial
@@ -830,7 +854,7 @@ public:
         // publish corrected cloud
         if (pubIcpKeyFrames.getNumSubscribers() != 0)
         {
-            pcl::PointCloud<PointType>::Ptr closed_cloud(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr closed_cloud(new VelCurve());
             pcl::transformPointCloud(*cureKeyframeCloud, *closed_cloud, icp.getFinalTransformation());
             publishCloud(&pubIcpKeyFrames, closed_cloud, timeLaserInfoStamp, odometryFrame);
         }
@@ -977,7 +1001,7 @@ public:
         return true;
     }
 
-    void loopFindNearKeyframes(pcl::PointCloud<PointType>::Ptr& nearKeyframes, const int& key, const int& searchNum)
+    void loopFindNearKeyframes(VelCurve::Ptr& nearKeyframes, const int& key, const int& searchNum)
     {
         // extract near keyframes
         nearKeyframes->clear();
@@ -995,13 +1019,13 @@ public:
             return;
 
         // downsample near keyframes
-        pcl::PointCloud<PointType>::Ptr cloud_temp(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cloud_temp(new VelCurve());
         downSizeFilterICP.setInputCloud(nearKeyframes);
         downSizeFilterICP.filter(*cloud_temp);
         *nearKeyframes = *cloud_temp;
     }
 
-    void loopFindNearKeyframesWithRespectTo(pcl::PointCloud<PointType>::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key)
+    void loopFindNearKeyframesWithRespectTo(VelCurve::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key)
     {
         // extract near keyframes
         nearKeyframes->clear();
@@ -1019,7 +1043,7 @@ public:
             return;
 
         // downsample near keyframes
-        pcl::PointCloud<PointType>::Ptr cloud_temp(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cloud_temp(new VelCurve());
         downSizeFilterICP.setInputCloud(nearKeyframes);
         downSizeFilterICP.filter(*cloud_temp);
         *nearKeyframes = *cloud_temp;
@@ -1140,7 +1164,7 @@ public:
 
     void extractForLoopClosure()
     {
-        pcl::PointCloud<PointType>::Ptr cloudToExtract(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr cloudToExtract(new VelCurve());
         int numPoses = cloudKeyPoses3D->size();
         for (int i = numPoses-1; i >= 0; --i)
         {
@@ -1155,8 +1179,8 @@ public:
 
     void extractNearby()
     {
-        pcl::PointCloud<PointType>::Ptr surroundingKeyPoses(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr surroundingKeyPosesDS(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr surroundingKeyPoses(new VelCurve());
+        VelCurve::Ptr surroundingKeyPosesDS(new VelCurve());
         std::vector<int> pointSearchInd;
         std::vector<float> pointSearchSqDis;
 
@@ -1185,7 +1209,7 @@ public:
         extractCloud(surroundingKeyPosesDS);
     }
 
-    void extractCloud(pcl::PointCloud<PointType>::Ptr cloudToExtract)
+    void extractCloud(VelCurve::Ptr cloudToExtract)
     {
         // fuse the map
         laserCloudCornerFromMap->clear();
@@ -1203,8 +1227,8 @@ public:
                 *laserCloudSurfFromMap   += laserCloudMapContainer[thisKeyInd].second;
             } else {
                 // transformed cloud not available
-                pcl::PointCloud<PointType> laserCloudCornerTemp = *transformPointCloud(cornerCloudKeyFrames[thisKeyInd],  &cloudKeyPoses6D->points[thisKeyInd]);
-                pcl::PointCloud<PointType> laserCloudSurfTemp = *transformPointCloud(surfCloudKeyFrames[thisKeyInd],    &cloudKeyPoses6D->points[thisKeyInd]);
+                VelCurve laserCloudCornerTemp = *transformPointCloud(cornerCloudKeyFrames[thisKeyInd],  &cloudKeyPoses6D->points[thisKeyInd]);
+                VelCurve laserCloudSurfTemp = *transformPointCloud(surfCloudKeyFrames[thisKeyInd],    &cloudKeyPoses6D->points[thisKeyInd]);
                 *laserCloudCornerFromMap += laserCloudCornerTemp;
                 *laserCloudSurfFromMap   += laserCloudSurfTemp;
                 laserCloudMapContainer[thisKeyInd] = make_pair(laserCloudCornerTemp, laserCloudSurfTemp);
@@ -1253,6 +1277,11 @@ public:
         downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
         downSizeFilterCorner.filter(*laserCloudCornerLastDS);
         laserCloudCornerLastDSNum = laserCloudCornerLastDS->size();
+
+        laserCloudLessCornerLastDS->clear();
+        downSizeFilterLessCorner.setInputCloud(laserCloudLessCornerLast);
+        downSizeFilterLessCorner.filter(*laserCloudLessCornerLastDS);
+        laserCloudLessCornerLastDSNum = laserCloudLessCornerLastDS->size();
 
         laserCloudSurfLastDS->clear();
         downSizeFilterSurf.setInputCloud(laserCloudSurfLast);
@@ -1867,14 +1896,18 @@ public:
         transformTobeMapped[5] = latestEstimate.translation().z();
 
         // save all the received edge and surf points
-        pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr thisCornerKeyFrame(new VelCurve());
+        VelCurve::Ptr thisLessCornerKeyFrame(new VelCurve());
+        VelCurve::Ptr thisSurfKeyFrame(new VelCurve());
+
         pcl::copyPointCloud(*laserCloudCornerLastDS,  *thisCornerKeyFrame);
+        pcl::copyPointCloud(*laserCloudLessCornerLastDS,  *thisLessCornerKeyFrame);
         pcl::copyPointCloud(*laserCloudSurfLastDS,    *thisSurfKeyFrame);
 
         // save key frame cloud
         stamps.push_back(timeLaserInfoStamp.toSec());
         cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
+        lesscornerCloudKeyFrames.push_back(thisLessCornerKeyFrame);
         surfCloudKeyFrames.push_back(thisSurfKeyFrame);
 
         // Scan Context loop detector - giseop
@@ -1884,7 +1917,7 @@ public:
         const SCInputType sc_input_type = SCInputType::SINGLE_SCAN_FULL; // change this
 
         if( sc_input_type == SCInputType::SINGLE_SCAN_FULL ) {
-            pcl::PointCloud<PointType>::Ptr thisRawCloudKeyFrame(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr thisRawCloudKeyFrame(new VelCurve());
             pcl::copyPointCloud(*laserCloudRawDS,  *thisRawCloudKeyFrame);
             scManager.makeAndSaveScancontextAndKeys(*thisRawCloudKeyFrame);
         }
@@ -1892,7 +1925,7 @@ public:
             scManager.makeAndSaveScancontextAndKeys(*thisSurfKeyFrame);
         }
         else if (sc_input_type == SCInputType::MULTI_SCAN_FEAT) {
-            pcl::PointCloud<PointType>::Ptr multiKeyFrameFeatureCloud(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr multiKeyFrameFeatureCloud(new VelCurve());
             loopFindNearKeyframes(multiKeyFrameFeatureCloud, cloudKeyPoses6D->size() - 1, historyKeyframeSearchNum);
             scManager.makeAndSaveScancontextAndKeys(*multiKeyFrameFeatureCloud);
         }
@@ -1907,7 +1940,7 @@ public:
 
         // save keyframe cloud as file giseop
         bool saveRawCloud { true };
-        pcl::PointCloud<PointType>::Ptr thisKeyFrameCloud(new pcl::PointCloud<PointType>());
+        VelCurve::Ptr thisKeyFrameCloud(new VelCurve());
         if(saveRawCloud) {
             *thisKeyFrameCloud += *laserCloudRaw;
         } else {
@@ -2054,7 +2087,7 @@ public:
         // publish registered key frame
         if (pubRecentKeyFrame.getNumSubscribers() != 0)
         {
-            pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr cloudOut(new VelCurve());
             PointTypePose thisPose6D = trans2PointTypePose(transformTobeMapped);
             *cloudOut += *transformPointCloud(laserCloudCornerLastDS,  &thisPose6D);
             *cloudOut += *transformPointCloud(laserCloudSurfLastDS,    &thisPose6D);
@@ -2063,7 +2096,7 @@ public:
         // publish registered high-res raw cloud
         if (pubCloudRegisteredRaw.getNumSubscribers() != 0)
         {
-            pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
+            VelCurve::Ptr cloudOut(new VelCurve());
             pcl::fromROSMsg(cloudInfo.cloud_deskewed, *cloudOut);
             PointTypePose thisPose6D = trans2PointTypePose(transformTobeMapped);
             *cloudOut = *transformPointCloud(cloudOut,  &thisPose6D);

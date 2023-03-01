@@ -12,7 +12,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <opencv2/opencv.hpp>
+
 
 
 #include <pcl/point_cloud.h>
@@ -32,8 +32,7 @@
 #include <tf/LinearMath/Quaternion.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
- #include <gtsam/nonlinear/Values.h>
+#include <tf/transform_broadcaster.h> #include <gtsam/nonlinear/Values.h>
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -73,6 +72,31 @@
 #include <sstream>
 #include "boost/format.hpp"
 #include <boost/filesystem.hpp>
+//#include <opencv2/opencv.hpp>
+
+namespace vel_point{
+struct PointXYZIRTC
+{
+  PCL_ADD_POINT4D;                    // quad-word XYZ
+  float         intensity;            ///< laser intensity reading
+  std::uint16_t ring;                 ///< laser ring number
+  float         time;                 ///< laser time reading
+  float         curvature;            ///< laser gemetry curvature
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
+}
+EIGEN_ALIGN16;
+}  // namespace velodyne_pcl
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, intensity, intensity)
+                                  (std::uint16_t, ring, ring)
+                                  (float, time, time)
+                                  (float, curvature, curvature))
+
+
 
 
 using namespace gtsam;
@@ -87,7 +111,8 @@ using namespace std;
 
 typedef std::numeric_limits< double > dbl;
 
-typedef pcl::PointXYZI PointType;
+using PointType = vel_point::PointXYZIRTC;
+typedef pcl::PointCloud<PointType> VelCurve;
 
 enum class SensorType { MULRAN, VELODYNE, OUSTER };
 
@@ -111,7 +136,7 @@ void SaveData(const std::string& directory,
               bool save_posegraph);
 
 void SavePosesHomogeneousBALM(
-    const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds,
+    const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds,
     const std::vector<Eigen::Affine3d>& poses,
     const std::string& directory,
     double downsample_size);
@@ -380,16 +405,7 @@ public:
 };
 
 
-sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame)
-{
-    sensor_msgs::PointCloud2 tempCloud;
-    pcl::toROSMsg(*thisCloud, tempCloud);
-    tempCloud.header.stamp = thisStamp;
-    tempCloud.header.frame_id = thisFrame;
-    if (thisPub->getNumSubscribers() != 0)
-        thisPub->publish(tempCloud);
-    return tempCloud;
-}
+sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame);
 
 template<typename T>
 double ROS_TIME(T msg)
