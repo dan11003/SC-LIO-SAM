@@ -1,38 +1,6 @@
 #pragma once
-
-#include <ros/ros.h>
-
-#include <std_msgs/Header.h>
-#include <std_msgs/Float64MultiArray.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-
-
-
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/search/impl/search.hpp>
-#include <pcl/range_image/range_image.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
-#include <pcl/registration/icp.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/crop_box.h> 
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <tf/LinearMath/Quaternion.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h> #include <gtsam/nonlinear/Values.h>
+#include "lio_sam/generics.h"
+#include <gtsam/nonlinear/Values.h>
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -50,57 +18,13 @@
 
 #include <gtsam/nonlinear/ISAM2.h>
 
-
-#include <limits>
-#include <vector>
-#include <cmath>
-#include <algorithm>
-#include <queue>
-#include <deque>
-#include <iostream>
-#include <fstream>
-#include <ctime>
-#include <cfloat>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <limits>
-#include <iomanip>
-#include <array>
-#include <thread>
-#include <mutex>
-#include <sstream>
-#include "boost/format.hpp"
-#include <boost/filesystem.hpp>
 //#include <opencv2/opencv.hpp>
-
-namespace vel_point{
-struct PointXYZIRTC
-{
-  PCL_ADD_POINT4D;                    // quad-word XYZ
-  float         intensity;            ///< laser intensity reading
-  std::uint16_t ring;                 ///< laser ring number
-  float         time;                 ///< laser time reading
-  float         curvature;            ///< laser gemetry curvature
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
-}
-EIGEN_ALIGN16;
-}  // namespace velodyne_pcl
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
-                                  (float, x, x)
-                                  (float, y, y)
-                                  (float, z, z)
-                                  (float, intensity, intensity)
-                                  (std::uint16_t, ring, ring)
-                                  (float, time, time)
-                                  (float, curvature, curvature))
 
 
 
 
 using namespace gtsam;
-using std::endl;
+
 
 using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
@@ -111,58 +35,8 @@ using namespace std;
 
 typedef std::numeric_limits< double > dbl;
 
-using PointType = vel_point::PointXYZIRTC;
-typedef pcl::PointCloud<PointType> VelCurve;
-
 enum class SensorType { MULRAN, VELODYNE, OUSTER };
 
-void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size);
-
-
-
-void SaveOdom(
-    const std::string& dump_directory,
-    const std::vector<Eigen::Affine3d>& poses,
-    const std::vector<double>& keyframe_stamps,
-    const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds);
-
-void SaveData(const std::string& directory,
-              std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> edgeCloudKeyFrames,
-              gtsam::Values& isamCurrentEstimate,
-              const std::vector<double>& stamps,
-              bool save_balm,
-              bool save_odom,
-              bool save_posegraph);
-
-void SavePosesHomogeneousBALM(
-    const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds,
-    const std::vector<Eigen::Affine3d>& poses,
-    const std::string& directory,
-    double downsample_size);
-
-
-/* Returns created subfolder with timestamp */
-std::string CreateFolder(const std::string& basePath){
-
-  auto t = std::time(nullptr);
-  auto tm = *std::localtime(&t);
-
-  //const std::string timeStr(std::put_time(&tm, "%Y-%m-%d_%H-%M"));
-
-  std::time_t now = std::time(NULL);
-  std::tm * ptm = std::localtime(&now);
-  char buffer[32];
-  // Format: Mo, 15.06.2009 20:20:00
-  std::strftime(buffer, 32, "%a_%Y.%m.%d_%H:%M:%S", ptm);
-
-
-  const std::string dir = basePath + "/SC_" + std::string(buffer) + std::string("/");
-  if (boost::filesystem::create_directories(dir)){
-      std::cout << "SC-LIO-SAM - Created new output directory: " << dir << std::endl;
-  }
-  return dir;
-}
 
 
 class ParamServer
@@ -197,6 +71,7 @@ public:
     bool save_Posegraph = false;
     bool save_BALM = false;
     bool save_odom = false;
+    bool saveRefinementGraph = false;
 
 
     bool use_gps = false;
@@ -285,10 +160,12 @@ public:
         nh.param<bool>("/slam_save_posegraph", save_Posegraph, false);
         nh.param<bool>("/slam_save_odom", save_odom, false);
         nh.param<bool>("/export_slam_pcd", export_pcd, false);
+        nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, false);
+
         cout << "SLAM - save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
         nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
-        savePCDDirectory = CreateFolder(savePCDDirectory);
+        savePCDDirectory = IO::CreateFolder(savePCDDirectory, "", "SLAM");
 
         std::string sensorStr;
         nh.param<std::string>("lio_sam/sensor", sensorStr, "");
@@ -371,41 +248,8 @@ public:
         usleep(100);
     }
 
-    sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in)
-    {
-        sensor_msgs::Imu imu_out = imu_in;
-        // rotate acceleration
-        Eigen::Vector3d acc(imu_in.linear_acceleration.x, imu_in.linear_acceleration.y, imu_in.linear_acceleration.z);
-        acc = extRot * acc;
-        imu_out.linear_acceleration.x = acc.x();
-        imu_out.linear_acceleration.y = acc.y();
-        imu_out.linear_acceleration.z = acc.z();
-        // rotate gyroscope
-        Eigen::Vector3d gyr(imu_in.angular_velocity.x, imu_in.angular_velocity.y, imu_in.angular_velocity.z);
-        gyr = extRot * gyr;
-        imu_out.angular_velocity.x = gyr.x();
-        imu_out.angular_velocity.y = gyr.y();
-        imu_out.angular_velocity.z = gyr.z();
-        // rotate roll pitch yaw
-        Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
-        Eigen::Quaterniond q_final = q_from * extQRPY;
-        imu_out.orientation.x = q_final.x();
-        imu_out.orientation.y = q_final.y();
-        imu_out.orientation.z = q_final.z();
-        imu_out.orientation.w = q_final.w();
-
-        if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
-        {
-            ROS_ERROR("Invalid quaternion, please use a 9-axis IMU!");
-            ros::shutdown();
-        }
-
-        return imu_out;
-    }
 };
 
-
-sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame);
 
 template<typename T>
 double ROS_TIME(T msg)
@@ -446,34 +290,22 @@ void imuRPY2rosRPY(sensor_msgs::Imu *thisImuMsg, T *rosRoll, T *rosPitch, T *ros
 }
 
 
-float pointDistance(PointType p)
+inline float pointDistance(PointType p)
 {
     return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
 }
 
 
-float pointDistance(PointType p1, PointType p2)
+inline float pointDistance(PointType p1, PointType p2)
 {
     return sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y) + (p1.z-p2.z)*(p1.z-p2.z));
 }
 
-void saveSCD(std::string fileName, Eigen::MatrixXd matrix, std::string delimiter = " ")
-{
-    // delimiter: ", " or " " etc.
-
-    int precision = 3; // or Eigen::FullPrecision, but SCD does not require such accruate precisions so 3 is enough.
-    const static Eigen::IOFormat the_format(precision, Eigen::DontAlignCols, delimiter, "\n");
- 
-    std::ofstream file(fileName);
-    if (file.is_open())
-    {
-        file << matrix.format(the_format);
-        file.close();
-    }
-}
-
-std::string padZeros(int val, int num_digits = 6) {
-  std::ostringstream out;
-  out << std::internal << std::setfill('0') << std::setw(num_digits) << val;
-  return out.str();
-}
+void SaveData(const std::string& directory,
+              std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
+              std::vector<pcl::PointCloud<PointType>::Ptr> edgeCloudKeyFrames,
+              gtsam::Values& isamCurrentEstimate,
+              const std::vector<double>& stamps,
+              bool save_balm,
+              bool save_odom,
+              bool save_posegraph);

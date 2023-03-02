@@ -44,6 +44,7 @@
  * documentation</a>
  */
 
+#pragma once
 #ifndef NANOFLANN_HPP_
 #define NANOFLANN_HPP_
 
