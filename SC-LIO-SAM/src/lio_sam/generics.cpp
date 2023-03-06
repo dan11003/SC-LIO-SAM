@@ -178,7 +178,7 @@ bool PoseGraph::LoadGraph(const std::string& path, boost::shared_ptr<PoseGraph> 
     boost::archive::binary_iarchive ia(ifs);
     ia >> graph;
     ifs.close();
-    cout<<"Graph succesfully loaded from: "<<path<<endl;
+    cout<<"Graph ("<<graph->ToString()<<")succesfully loaded from: "<<path<<endl;
     return true;
   }catch (std::exception &e) {
     std::cerr<<"Graph could not be loaded from: "<<path<<std::endl;
