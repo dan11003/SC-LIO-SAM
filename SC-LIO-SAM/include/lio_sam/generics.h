@@ -3,6 +3,7 @@
 
 #define PCL_NO_PRECOMPILE
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
+#include <pcl/search/impl/search.hpp>
 
 #include <ros/ros.h>
 
@@ -74,7 +75,7 @@
 using std::endl; using std::cout; using std::cerr;
 
 
-
+//
 namespace vel_point{
 struct PointXYZIRTC
 {
@@ -123,6 +124,8 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRPYT,
                                    (double, time, time))
 
 typedef PointXYZIRPYT  PointTypePose;
+typedef pcl::PointCloud<pcl::PointXYZINormal> NormalCloud;
+typedef pcl::PointCloud<pcl::PointXYZI> IntensityCloud;
 
 namespace IO{
 
@@ -163,7 +166,120 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr ToCloudXYZ(pcl::PointCloud<PointType>::Ptr c
 
 Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez);
 
+Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl);
+
 //sensor_msgs::PointCloud2 publishCloud(ros::Publisher *thisPub, pcl::PointCloud<PointType>::Ptr thisCloud, ros::Time thisStamp, std::string thisFrame);
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);
+
+typedef struct
+{
+    float l3; // largest eigen value;
+    float planarity;
+    int nSamples;
+    //Eigen::Matrix3d cov;
+    Eigen::Vector3d normal;
+    //Eigen::Vector3d mean;
+    Eigen::Vector3d centerPoint;
+    float entropy;
+    float intensity;
+    float time;
+    float curvature;
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      //ar & queue_new_nodes_;
+      ar & l3;
+      ar & planarity;
+      ar & nSamples;
+      ar & normal;
+      ar & centerPoint;
+      ar & entropy;
+      ar & intensity;
+      ar & time;
+      ar & curvature;
+    }
+
+}SurfelPointInfo;
+
+class SurfElCloud
+{
+public:
+  SurfElCloud() {}
+
+  NormalCloud::Ptr GetPointCloud()const;
+
+  auto begin(){return cloud.begin();}
+
+  auto end(){return cloud.end();}
+
+  SurfElCloud Transform(const Eigen::Isometry3d& transform)const;
+
+  std::vector<SurfelPointInfo> cloud;
+
+protected:
+
+
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    //ar & queue_new_nodes_;
+    ar & cloud;
+  }
+
+};
+
+void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
+
+struct lessThanKey
+{
+  inline bool operator() (const PointType& p1, const PointType& p2)const
+  {
+    return (p1.time < p2.time);
+  }
+};
+
+//Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.
+//Memory Usage: 31 MB, less than 16.67% of C++ online submissions for Find K Closest Elements.
+class NNSearchArray {
+public:
+    std::vector<int> findClosestElements(std::vector<double>& arr, int k, float max, float query);
+};
+
+
+
+
+class SurfelExtraction
+{
+
+public:
+  SurfelExtraction(pcl::PointCloud<PointType>::Ptr& surf_in, int n_scan_lines, float scan_period);
+
+  void Extract(SurfElCloud& surfelCloud);
+
+private:
+
+  void LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours);
+
+  bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
+
+  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfEl);
+
+  void Initialize();
+
+  pcl::PointCloud<PointType>::Ptr surf_in_;
+  std::vector<pcl::PointCloud<PointType>::Ptr> ringClouds_; //sorted in time, and segmented per ring
+  std::vector<std::vector<double> > times_;
+
+  pcl::PointXYZINormal defaultNormal;
+  int n_scan_lines_;
+  float scan_period_;
+
+};
+
 
 struct Node{
     Eigen::Isometry3d T;
@@ -194,6 +310,8 @@ public:
 
     std::map<int,Node> nodes;
 
+    std::map<int,SurfElCloud> surfels_;
+
     std::string ToString(){return "vertices: " + std::to_string(nodes.size()) + ", edges: " + std::to_string(constraints.size()); }
     friend class boost::serialization::access;
     template<class Archive>
@@ -202,6 +320,7 @@ public:
       //ar & queue_new_nodes_;
       ar & constraints;
       ar & nodes;
+      ar & surfels_;
     }
 
     static bool LoadGraph(const std::string& path, boost::shared_ptr<PoseGraph> &graph);
@@ -243,6 +362,13 @@ void serialize(Archive& ar, Eigen::Isometry3d &o, const unsigned version) {
   for (int i = 0; i < 16; i++) {
     ar & o.data()[i];
   }
+}
+
+template<typename Archive>
+void serialize(Archive& ar, Eigen::Vector3d &o, const unsigned version) {
+ for (int i = 0; i < 3; i++) {
+   ar & o.data()[i];
+ }
 }
 
 

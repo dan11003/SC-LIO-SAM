@@ -1,5 +1,6 @@
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
 
+#define PCL_NO_PRECOMPILE
+#include "lio_sam/generics.h"
 #include "lio_sam/utility.h"
 
 #include "lio_sam/cloud_info.h"
