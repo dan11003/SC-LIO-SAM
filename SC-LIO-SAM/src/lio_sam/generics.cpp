@@ -270,6 +270,13 @@ NormalCloud::Ptr SurfElCloud::GetPointCloud()const{
   }
   return output;
 }
+std::vector<double> SurfElCloud::GetPointCloudTime()const{
+   std::vector<double> stamps(cloud.size());
+   for(int i = 0 ; i < cloud.size() ; i++){
+       stamps[i] = cloud[i].time;
+   }
+   return stamps;
+}
 
 SurfElCloud SurfElCloud::Transform(const Eigen::Isometry3d& transform)const{
   SurfElCloud SurfElTransformed = *this;

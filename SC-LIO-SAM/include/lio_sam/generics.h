@@ -211,6 +211,8 @@ public:
 
   NormalCloud::Ptr GetPointCloud()const;
 
+  std::vector<double> GetPointCloudTime()const;
+
   auto begin(){return cloud.begin();}
 
   auto end(){return cloud.end();}
