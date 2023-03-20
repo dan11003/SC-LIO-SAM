@@ -259,13 +259,23 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
 }
 
 
-NormalCloud::Ptr SurfElCloud::GetPointCloud()const{
+NormalCloud::Ptr SurfElCloud::GetPointCloud(int intensity)const{
   NormalCloud::Ptr output(new NormalCloud());
   for(auto && surfEl : cloud){
     pcl::PointXYZINormal pnt;
     pnt.x = surfEl.centerPoint(0); pnt.y = surfEl.centerPoint(1); pnt.z = surfEl.centerPoint(2);
     pnt.normal_x = surfEl.normal(0); pnt.normal_y = surfEl.normal(1);  pnt.normal_z = surfEl.normal(2);
-    pnt.intensity = surfEl.intensity;
+    if(intensity == 0)
+        pnt.intensity = surfEl.intensity;
+    else if(intensity == 1)
+        pnt.intensity = surfEl.curvature;
+    else if(intensity == 2)
+        pnt.intensity = surfEl.nSamples;
+    else if(intensity == 3)
+        pnt.intensity = surfEl.entropy;
+    else if(intensity == 4)
+        pnt.intensity = surfEl.planarity;
+
     output->push_back(std::move(pnt));
   }
   return output;
@@ -414,7 +424,7 @@ bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, Surfel
   const float l1 = std::sqrt(es.eigenvalues()[0]);  // l1 < l2 < l3
   const float l2 = std::sqrt(es.eigenvalues()[1]);
   const float l3 = std::sqrt(es.eigenvalues()[2]);
-  const float planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
+  const float planarity = 1 - (l2 - l1)/(l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
 
   Eigen::Vector3d normal = es.eigenvectors().col(0);
 

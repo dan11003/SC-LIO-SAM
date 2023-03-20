@@ -209,7 +209,7 @@ class SurfElCloud
 public:
   SurfElCloud() {}
 
-  NormalCloud::Ptr GetPointCloud()const;
+  NormalCloud::Ptr GetPointCloud(int intensity = 0)const;
 
   std::vector<double> GetPointCloudTime()const;
 
