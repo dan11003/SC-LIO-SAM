@@ -246,14 +246,14 @@ struct lessThanKey
 
 //Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.
 //Memory Usage: 31 MB, less than 16.67% of C++ online submissions for Find K Closest Elements.
-class NNSearchArray {
+/*class NNSearchArray {
 public:
     std::vector<int> findClosestElements(std::vector<double>& arr, int k, float max, float query);
-};
+};*/
 
 
 
-
+/*
 class SurfelExtraction
 {
 
@@ -279,12 +279,14 @@ private:
   pcl::PointXYZINormal defaultNormal;
   int n_scan_lines_;
   float scan_period_;
+  int nr_neighbours = 2;
 
-};
+};*/
 
 
 struct Node{
     Eigen::Isometry3d T;
+    Eigen::Quaterniond imu;
     std::vector<pcl::PointCloud<PointType>::Ptr> segmented_scans;
 
     friend class boost::serialization::access;
@@ -293,6 +295,7 @@ struct Node{
     {
       //ar & queue_new_nodes_;
       ar & T;
+      ar & imu;
       ar & segmented_scans;
     }
 };
@@ -370,6 +373,13 @@ template<typename Archive>
 void serialize(Archive& ar, Eigen::Vector3d &o, const unsigned version) {
  for (int i = 0; i < 3; i++) {
    ar & o.data()[i];
+ }
+}
+
+template<typename Archive>
+void serialize(Archive& ar, Eigen::Quaterniond &o, const unsigned version) {
+ for (int i = 0; i < 4; i++) {
+   ar & o.coeffs().data()[i];
  }
 }
 
