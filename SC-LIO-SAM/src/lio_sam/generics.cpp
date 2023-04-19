@@ -207,6 +207,7 @@ NormalCloud::Ptr SurfElCloud::GetPointCloud(int intensity)const{
     NormalCloud::Ptr output(new NormalCloud());
     for(auto && surfEl : cloud){
         pcl::PointXYZINormal pnt;
+        pnt.curvature = surfEl.time;
         pnt.x = surfEl.centerPoint(0); pnt.y = surfEl.centerPoint(1); pnt.z = surfEl.centerPoint(2);
         pnt.normal_x = surfEl.normal(0); pnt.normal_y = surfEl.normal(1);  pnt.normal_z = surfEl.normal(2);
         if(intensity == 0)
