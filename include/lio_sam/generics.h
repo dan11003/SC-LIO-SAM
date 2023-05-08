@@ -1,6 +1,6 @@
-#ifndef GENERICS_H
-#define GENERICS_H
-
+//#ifndef GENERICS_H
+//#define GENERICS_H
+#pragma once
 #define PCL_NO_PRECOMPILE
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
 #include <pcl/search/impl/search.hpp>
@@ -387,4 +387,4 @@ void serialize(Archive& ar, Eigen::Quaterniond &o, const unsigned version) {
 } // namespace serialization
 } // namespace boost
 
-#endif // GENERICS_H
+//#endif // GENERICS_H

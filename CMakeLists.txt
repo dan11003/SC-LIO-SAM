@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(lio_sam)
 
 set(CMAKE_BUILD_TYPE "release")
 # set(CMAKE_CXX_FLAGS "-std=c++14")
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g -pthread")
+set(CMAKE_CXX_FLAGS "-std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 #set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 #set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 #set(CMAKE_C_COMPILER "/usr/bin/clang")
@@ -63,7 +63,7 @@ catkin_package(
   sensor_msgs
   message_runtime 
   message_generation
-  LIBRARIES ${PROJECT_NAME}_EXPORT
+  LIBRARIES ${PROJECT_NAME}
 )
 
 # include directories
@@ -100,27 +100,28 @@ link_directories(
 
 # Mapping Optimization
 
-set (${PROJECT_NAME}_LIB_SRCS_EXPORT
-  src/lio_sam/generics.cpp
-)
+#set (${PROJECT_NAME}_LIB_SRCS_EXPORT
+#  src/lio_sam/generics.cpp
+#)
 
-add_library(${PROJECT_NAME}_EXPORT ${${PROJECT_NAME}_LIB_SRCS_EXPORT})
-target_link_libraries(${PROJECT_NAME}_EXPORT ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_LIBRARIES} boost_serialization )
+#add_library(${PROJECT_NAME}_EXPORT ${${PROJECT_NAME}_LIB_SRCS_EXPORT})
+#target_link_libraries(${PROJECT_NAME}_EXPORT ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_LIBRARIES} boost_serialization )
 
 set (${PROJECT_NAME}_LIB_SRCS
+  src/lio_sam/generics.cpp
   src/lio_sam/utility.cpp
   src/lio_sam/Scancontext.cpp
 )
 
 
 add_library(${PROJECT_NAME} ${${PROJECT_NAME}_LIB_SRCS})
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_EXPORT ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} )
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} )
 
 #${PROJECT_NAME}_EXPORT
 
 add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
 add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME}_mapOptmization ${PROJECT_NAME} ${PROJECT_NAME}_EXPORT  ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+target_link_libraries(${PROJECT_NAME}_mapOptmization ${PROJECT_NAME}  ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 
 
 
