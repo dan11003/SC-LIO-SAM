@@ -1,4 +1,4 @@
-#include "lio_sam/generics.h"
+﻿#include "lio_sam/generics.h"
 
 
 namespace IO{
@@ -55,6 +55,31 @@ void SaveOdom(
         data_ofs << mat(3,0) << " " << mat(3,1) << " " << mat(3,2) << " " << mat(3,3) << std::endl;
         data_ofs.close();
     }
+}
+void SaveBALM2(
+        const std::string& dump_directory,
+        const std::vector<Eigen::Affine3d>& poses,
+        const std::vector<double>& keyframe_stamps,
+        const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds){
+
+    boost::filesystem::create_directories(dump_directory);
+    boost::filesystem::create_directories(dump_directory + "/pcd");
+
+    std::cout << "\"SLAM\" - Save odom to: " << dump_directory << std::endl << std::endl;
+    //std::cout << "Save clouds: " << clouds.size() << std::endl;
+    const std::string poseFilename = dump_directory + "pose.json";
+    std::ofstream data_ofs(poseFilename);
+    for(int i = 0; i < clouds.size(); i++) {
+        std::stringstream ss;
+
+        ss << std::setw(5) << std::setfill('0') << i;
+
+        pcl::io::savePCDFileBinary( dump_directory + "/pcd/" + ss.str() + ".pcd", *clouds[i]);
+        const Eigen::Vector3d trans = poses[i].translation();
+        Eigen::Quaterniond q(poses[i].linear());
+        data_ofs << trans(0) << " " << trans(1) << " " << trans(2) << " " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
+    }
+    data_ofs.close();
 }
 
 

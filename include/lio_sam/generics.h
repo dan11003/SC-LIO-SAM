@@ -144,6 +144,12 @@ void SavePosesHomogeneousBALM(
         const std::string& directory,
         double downsample_size);
 
+void SaveBALM2(
+        const std::string& dump_directory,
+        const std::vector<Eigen::Affine3d>& poses,
+        const std::vector<double>& keyframe_stamps,
+        const std::vector<pcl::PointCloud<PointType>::Ptr>& clouds);
+
 /* Returns created subfolder with timestamp */
 std::string CreateFolder(const std::string& basePath, const std::string& prefix, const std::string& callerName);
 

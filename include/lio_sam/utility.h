@@ -70,6 +70,8 @@ public:
     string savePCDDirectory;
     bool save_Posegraph = false;
     bool save_BALM = false;
+    bool save_BALM2 = false;
+
     bool save_odom = false;
     bool saveRefinementGraph = false;
 
@@ -157,12 +159,13 @@ public:
         nh.param<float>("lio_sam/poseCovThreshold", poseCovThreshold, 25.0);
 
         nh.param<bool>("/slam_save_balm", save_BALM, false);
+        nh.param<bool>("/slam_save_balm2", save_BALM2, false);
         nh.param<bool>("/slam_save_posegraph", save_Posegraph, false);
         nh.param<bool>("/slam_save_odom", save_odom, false);
         nh.param<bool>("/export_slam_pcd", export_pcd, false);
         nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, false);
 
-        cout << "SLAM - save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
+        cout << "SLAM - save_BALM: " << save_BALM << "SLAM - save_BALM2: " << save_BALM2  << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
         nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
         savePCDDirectory = IO::CreateFolder(savePCDDirectory, "", "SLAM");
@@ -303,9 +306,11 @@ inline float pointDistance(PointType p1, PointType p2)
 
 void SaveData(const std::string& directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> edgeCloudKeyFrames,
+              std::vector<pcl::PointCloud<PointType>::Ptr> lesscornerCloudKeyFrames,
+              std::vector<pcl::PointCloud<PointType>::Ptr> flatCloudKeyFrames,
               gtsam::Values& isamCurrentEstimate,
               const std::vector<double>& stamps,
               bool save_balm,
               bool save_odom,
-              bool save_posegraph);
+              bool save_posegraph,
+              bool save_balm2);

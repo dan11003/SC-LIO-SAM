@@ -2120,7 +2120,7 @@ public:
     }
     void SaveAll(){
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
-        SaveData(savePCDDirectory , cornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps, save_BALM, save_odom, save_Posegraph);
+        SaveData(savePCDDirectory , surfCloudKeyFrames, lesscornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps, save_BALM, save_odom, save_Posegraph, save_BALM2);
         if(saveRefinementGraph){
             cout << "Saving graph for refinement" << endl;
             for (int i = 0; i < isamCurrentEstimate.size(); ++i){
