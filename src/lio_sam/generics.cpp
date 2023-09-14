@@ -77,7 +77,7 @@ void SaveBALM2(
         pcl::io::savePCDFileBinary( dump_directory + "/pcd/" + ss.str() + ".pcd", *clouds[i]);
         const Eigen::Vector3d trans = poses[i].translation();
         Eigen::Quaterniond q(poses[i].linear());
-        data_ofs << trans(0) << " " << trans(1) << " " << trans(2) << " " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
+        data_ofs << std::fixed << std::setprecision(9) <<  trans(0) << " " << trans(1) << " " << trans(2) << " " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
     }
     data_ofs.close();
 }
