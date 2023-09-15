@@ -5,7 +5,7 @@
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find lio_sam)/launch/include/rosconsole/rosconsole_error.conf"/>
     
     <!-- EKF GPS-->
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" respawn="true" output="screen">
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" respawn="false" output="screen">
         <remap from="odometry/filtered" to="/odometry/navsat" />
         <param name="odom0" value="/odom"/>
         <param name="imu0" value="/synced/imu/data"/>
@@ -14,7 +14,7 @@
     </node>
 
     <!-- Navsat -->
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat" respawn="true" output="screen">
+    <node pkg="robot_localization" type="navsat_transform_node" name="navsat" respawn="false" output="screen">
         <rosparam param="datum">[59.375608, 16.5025311, 0.0, odom, base_link]</rosparam>
         <remap from="imu/data" to="/synced/imu/data" />
         <remap from="gps/fix" to="/fix/latched" />

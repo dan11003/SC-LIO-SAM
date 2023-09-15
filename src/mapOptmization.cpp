@@ -2159,7 +2159,7 @@ int main(int argc, char** argv)
             break;
         }
     }
-
+    keep_running=false;
     loopthread.join();
     visualizeMapThread.join();
 
