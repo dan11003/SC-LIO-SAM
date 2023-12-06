@@ -602,16 +602,16 @@ public:
         pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
         if(use_datum){
-            cout << "Saving with datum_swepos_x: " << datum_swepos_x << ", datum_swepos_y: " << datum_swepos_y << ", datum_swepos_z: " << datum_swepos_z << endl;
+            cout << "Saving with datum_sweref_x: " << datum_sweref_x << ", datum_sweref_y: " << datum_sweref_y << ", datum_sweref_z: " << datum_sweref_z << endl;
         }
         for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++)
         {
             PointTypePose pose_i = cloudKeyPoses6D->points[i];
             if (use_datum)
             {
-                pose_i.x += datum_swepos_x;
-                pose_i.y += datum_swepos_y;
-                pose_i.z += datum_swepos_z;
+                pose_i.x += datum_sweref_x;
+                pose_i.y += datum_sweref_y;
+                pose_i.z += datum_sweref_z;
             }
             *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i], &pose_i);
             *globalSurfCloud += *transformPointCloud(surfCloudKeyFrames[i], &pose_i);
@@ -2245,7 +2245,7 @@ public:
     void SaveAll()
     {
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
-        Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_swepos_x, datum_swepos_y, datum_swepos_z) : Eigen::Vector3d::Zero();
+        Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
         SaveData(savePCDDirectory, surfCloudKeyFrames, lesscornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
         if (saveRefinementGraph)
         {

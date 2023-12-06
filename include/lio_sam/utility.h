@@ -136,7 +136,7 @@ public:
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
 
-    float datum_swepos_x, datum_swepos_y, datum_swepos_z;
+    float datum_sweref_x, datum_sweref_y, datum_sweref_z;
     bool use_datum;
 
     ParamServer()
@@ -248,12 +248,12 @@ public:
         nh.param<bool>("lio_sam/use_gps", use_gps, false);
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
 
-        nh.param<float>("gnss/datum_swepos_x", datum_swepos_x, 0.0);
-        nh.param<float>("gnss/datum_swepos_y", datum_swepos_y, 0.0);
-        nh.param<float>("gnss/datum_swepos_z", datum_swepos_z, 0.0);
+        nh.param<float>("gnss/datum_sweref_x", datum_sweref_x, 0.0);
+        nh.param<float>("gnss/datum_sweref_y", datum_sweref_y, 0.0);
+        nh.param<float>("gnss/datum_sweref_z", datum_sweref_z, 0.0);
         nh.param<bool>("gnss/use_datum", use_datum, false);
         if (use_datum)
-            ROS_INFO_STREAM("datum_swepos_x: " << datum_swepos_x << ", datum_swepos_y: " << datum_swepos_y << ", datum_swepos_z: " << datum_swepos_z);
+            ROS_INFO_STREAM("datum_sweref_x: " << datum_sweref_x << ", datum_sweref_y: " << datum_sweref_y << ", datum_sweref_z: " << datum_sweref_z);
         else
             ROS_INFO("Datum not set");
 

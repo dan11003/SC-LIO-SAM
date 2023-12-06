@@ -6,7 +6,7 @@ lio_sam:
   odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
 
   # TODO Ensure that this only contain readings with rtk-fix
-  gpsTopic: "/gps_swepos"                   # GPS odometry topic from navsat, see module_navsat.launch file
+  gpsTopic: "/gps_sweref"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
   # Frames
   lidarFrame: "base_link"
