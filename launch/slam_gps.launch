@@ -5,9 +5,11 @@
     
     <!-- Parameters -->
     <rosparam file="$(arg slam_param_file)" command="load" />
+    <rosparam file="$(find lio_sam)/config/gnss_params.yaml" command="load" />
 
     <!-- Start node -->
-    <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="false"/>
+    <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="false">
+    </node>
 
     <include file="$(find lio_sam)/launch/include/module_navsat.launch"/>
 

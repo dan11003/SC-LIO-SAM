@@ -4,7 +4,9 @@ lio_sam:
   pointCloudTopic: "velodyne_points"               # Point cloud data
   imuTopic: "imu/data_repetition_free"                         # IMU data
   odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
-  gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
+
+  # TODO Ensure that this only contain readings with rtk-fix
+  gpsTopic: "/gps_swepos"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
   # Frames
   lidarFrame: "base_link"
@@ -14,10 +16,10 @@ lio_sam:
 
   # GPS Settings
   use_gps: true                              # Stäng av gps
-  noise_scaling_factor: 5.0                   # Vikta ner påverkan av gps
+  noise_scaling_factor: 5.0                   # Vikta ner påverkan av gps, högre värde = mindre påverkan
   useImuHeadingInitialization: true           # if using GPS data, set to "true"
-  useGpsElevation: false                      # if GPS elevation is bad, set to "false"
-  gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data. Används om gps felet är oftast inom sqrt(gpsCovThreshold>
+  useGpsElevation: true                      # if GPS elevation is bad, set to "false"
+  gpsCovThreshold: 0.06                        # m^2, threshold for using GPS data. Varians i x eller y led, position_covariance[0 eller 7] i fix-meddelandet
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data. När drift är större än sqrt(25) skall gps integreras.
 
   # Sensor Settings

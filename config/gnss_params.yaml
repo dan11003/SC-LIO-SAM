@@ -1,0 +1,7 @@
+gnss:
+  datum_swepos_x: 6584515.017288513
+  datum_swepos_y: 150136.1965327615
+  datum_swepos_z: 11.830299331665039
+  use_datum: true
+  sweref99_epsg: epsg:3010
+  wgs84_epsg: epsg:4326

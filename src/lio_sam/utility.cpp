@@ -8,6 +8,7 @@ void SaveData(const std::string& directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> flatCloudKeyFrames,
               gtsam::Values& isamCurrentEstimate,
               const std::vector<double>& stamps,
+              const Eigen::Vector3d& datum_offset,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,
@@ -18,7 +19,7 @@ std::vector<Eigen::Affine3d> poses;
 std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   for(int i = 0 ; i<isamCurrentEstimate.size(); i++) {
     gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
-    const Eigen::Affine3d m(pose.matrix());
+    Eigen::Affine3d m(pose.matrix());
     poses.push_back(std::move(m));
   }
 
@@ -41,6 +42,6 @@ std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   if(save_posegraph){
     std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
   }
-  IO::SaveMerged(clouds, poses, directory, 0.3);
+  IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
 
 }

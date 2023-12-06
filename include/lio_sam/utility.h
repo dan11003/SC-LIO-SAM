@@ -18,45 +18,43 @@
 
 #include <gtsam/nonlinear/ISAM2.h>
 
-//#include <opencv2/opencv.hpp>
-
-
-
+// #include <opencv2/opencv.hpp>
 
 using namespace gtsam;
 
-
-using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
-using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
 using symbol_shorthand::G; // GPS pose
+using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
+using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 
 using namespace std;
 
-typedef std::numeric_limits< double > dbl;
+typedef std::numeric_limits<double> dbl;
 
-enum class SensorType { MULRAN, VELODYNE, OUSTER };
-
-
+enum class SensorType
+{
+    MULRAN,
+    VELODYNE,
+    OUSTER
+};
 
 class ParamServer
 {
 public:
-
     ros::NodeHandle nh;
 
     std::string robot_id;
 
-    //Topics
+    // Topics
     string pointCloudTopic;
     string imuTopic;
     string odomTopic;
     string gpsTopic;
 
-    //Frames
+    // Frames
     string lidarFrame;
     string baselinkFrame;
-    string odometryFrame;
+    // string odometryFrame;
     string mapFrame;
 
     // GPS Settings
@@ -74,7 +72,6 @@ public:
 
     bool save_odom = false;
     bool saveRefinementGraph = false;
-
 
     bool use_gps = false;
     float gps_noise_scaling_factor = 1.0;
@@ -110,9 +107,9 @@ public:
     // voxel filter paprams
     float odometrySurfLeafSize;
     float mappingCornerLeafSize;
-    float mappingSurfLeafSize ;
+    float mappingSurfLeafSize;
 
-    float z_tollerance; 
+    float z_tollerance;
     float rotation_tollerance;
 
     // CPU Params
@@ -120,24 +117,27 @@ public:
     double mappingProcessInterval;
 
     // Surrounding map
-    float surroundingkeyframeAddingDistThreshold; 
-    float surroundingkeyframeAddingAngleThreshold; 
+    float surroundingkeyframeAddingDistThreshold;
+    float surroundingkeyframeAddingAngleThreshold;
     float surroundingKeyframeDensity;
     float surroundingKeyframeSearchRadius;
-    
+
     // Loop closure
-    bool  loopClosureEnableFlagSC, loopClosureEnableFlagRS;
+    bool loopClosureEnableFlagSC, loopClosureEnableFlagRS;
     float loopClosureFrequency;
-    int   surroundingKeyframeSize;
+    int surroundingKeyframeSize;
     float historyKeyframeSearchRadius;
     float historyKeyframeSearchTimeDiff;
-    int   historyKeyframeSearchNum;
+    int historyKeyframeSearchNum;
     float historyKeyframeFitnessScore;
 
     // global map visualization radius
     float globalMapVisualizationSearchRadius;
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
+
+    float datum_swepos_x, datum_swepos_y, datum_swepos_z;
+    bool use_datum;
 
     ParamServer()
     {
@@ -150,12 +150,12 @@ public:
 
         nh.param<std::string>("lio_sam/lidarFrame", lidarFrame, "base_link");
         nh.param<std::string>("lio_sam/baselinkFrame", baselinkFrame, "base_link_scliosam");
-        nh.param<std::string>("lio_sam/odometryFrame", odometryFrame, "odom");
+        // nh.param<std::string>("lio_sam/odometryFrame", odometryFrame, "odom");
         nh.param<std::string>("lio_sam/mapFrame", mapFrame, "map");
 
         nh.param<bool>("lio_sam/useImuHeadingInitialization", useImuHeadingInitialization, false);
         nh.param<bool>("lio_sam/useGpsElevation", useGpsElevation, false);
-        nh.param<float>("lio_sam/gpsCovThreshold", gpsCovThreshold, 2.0);
+        nh.param<float>("lio_sam/gpsCovThreshold", gpsCovThreshold, 1.0);
         nh.param<float>("lio_sam/poseCovThreshold", poseCovThreshold, 25.0);
 
         nh.param<bool>("/slam_save_balm", save_BALM, false);
@@ -165,7 +165,7 @@ public:
         nh.param<bool>("/export_slam_pcd", export_pcd, false);
         nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, false);
 
-        cout << "SLAM - save_BALM: " << save_BALM << "SLAM - save_BALM2: " << save_BALM2  << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
+        cout << "SLAM - save_BALM: " << save_BALM << "SLAM - save_BALM2: " << save_BALM2 << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
         nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
         savePCDDirectory = IO::CreateFolder(savePCDDirectory, "", "SLAM");
@@ -248,20 +248,26 @@ public:
         nh.param<bool>("lio_sam/use_gps", use_gps, false);
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
 
+        nh.param<float>("gnss/datum_swepos_x", datum_swepos_x, 0.0);
+        nh.param<float>("gnss/datum_swepos_y", datum_swepos_y, 0.0);
+        nh.param<float>("gnss/datum_swepos_z", datum_swepos_z, 0.0);
+        nh.param<bool>("gnss/use_datum", use_datum, false);
+        if (use_datum)
+            ROS_INFO_STREAM("datum_swepos_x: " << datum_swepos_x << ", datum_swepos_y: " << datum_swepos_y << ", datum_swepos_z: " << datum_swepos_z);
+        else
+            ROS_INFO("Datum not set");
+
         usleep(100);
     }
-
 };
 
-
-template<typename T>
+template <typename T>
 double ROS_TIME(T msg)
 {
     return msg->header.stamp.toSec();
 }
 
-
-template<typename T>
+template <typename T>
 void imuAngular2rosAngular(sensor_msgs::Imu *thisImuMsg, T *angular_x, T *angular_y, T *angular_z)
 {
     *angular_x = thisImuMsg->angular_velocity.x;
@@ -269,8 +275,7 @@ void imuAngular2rosAngular(sensor_msgs::Imu *thisImuMsg, T *angular_x, T *angula
     *angular_z = thisImuMsg->angular_velocity.z;
 }
 
-
-template<typename T>
+template <typename T>
 void imuAccel2rosAccel(sensor_msgs::Imu *thisImuMsg, T *acc_x, T *acc_y, T *acc_z)
 {
     *acc_x = thisImuMsg->linear_acceleration.x;
@@ -278,8 +283,7 @@ void imuAccel2rosAccel(sensor_msgs::Imu *thisImuMsg, T *acc_x, T *acc_y, T *acc_
     *acc_z = thisImuMsg->linear_acceleration.z;
 }
 
-
-template<typename T>
+template <typename T>
 void imuRPY2rosRPY(sensor_msgs::Imu *thisImuMsg, T *rosRoll, T *rosPitch, T *rosYaw)
 {
     double imuRoll, imuPitch, imuYaw;
@@ -292,24 +296,23 @@ void imuRPY2rosRPY(sensor_msgs::Imu *thisImuMsg, T *rosRoll, T *rosPitch, T *ros
     *rosYaw = imuYaw;
 }
 
-
 inline float pointDistance(PointType p)
 {
-    return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+    return sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 }
-
 
 inline float pointDistance(PointType p1, PointType p2)
 {
-    return sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y) + (p1.z-p2.z)*(p1.z-p2.z));
+    return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
 }
 
-void SaveData(const std::string& directory,
+void SaveData(const std::string &directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
               std::vector<pcl::PointCloud<PointType>::Ptr> lesscornerCloudKeyFrames,
               std::vector<pcl::PointCloud<PointType>::Ptr> flatCloudKeyFrames,
-              gtsam::Values& isamCurrentEstimate,
-              const std::vector<double>& stamps,
+              gtsam::Values &isamCurrentEstimate,
+              const std::vector<double> &stamps,
+              const Eigen::Vector3d& datum_offset,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,

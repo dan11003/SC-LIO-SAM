@@ -51,6 +51,10 @@
 #include "boost/archive/binary_iarchive.hpp"
 #include "boost/archive/binary_oarchive.hpp"
 #include "boost/serialization/map.hpp"
+#include "eigen3/Eigen/Dense"
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Core>
+
 
 
 #include <limits>
@@ -129,7 +133,7 @@ typedef pcl::PointCloud<pcl::PointXYZI> IntensityCloud;
 
 namespace IO{
 
-void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size);
+void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const Eigen::Vector3d& datum_offset, const std::string& directory, double downsample_size);
 
 void SaveOdom(
         const std::string& dump_directory,
