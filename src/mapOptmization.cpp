@@ -444,6 +444,9 @@ public:
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &gpsMsg)
     {
+        datum_sweref_x = gpsMsg->twist.twist.linear.x;
+        datum_sweref_y = gpsMsg->twist.twist.linear.y;
+        datum_sweref_z = gpsMsg->twist.twist.linear.z;
         gpsQueue.push_back(*gpsMsg); // callback with timestmap
     }
 
