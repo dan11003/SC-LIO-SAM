@@ -133,6 +133,8 @@ typedef pcl::PointCloud<pcl::PointXYZI> IntensityCloud;
 
 namespace IO{
 
+void createTransformedPointCloud(const pcl::PointCloud<PointType>::Ptr input, const Eigen::Vector3d& transform, pcl::PointCloud<PointType>::Ptr output);
+
 void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const Eigen::Vector3d& datum_offset, const std::string& directory, double downsample_size);
 
 void SaveOdom(

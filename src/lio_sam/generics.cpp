@@ -2,60 +2,78 @@
 
 namespace IO
 {
+
+    void createTransformedPointCloud(const pcl::PointCloud<PointType>::Ptr input, const Eigen::Vector3d &transform, pcl::PointCloud<PointType>::Ptr output)
+    {
+        if (input == nullptr)
+        {
+            std::throw_with_nested(std::runtime_error("Incorrect usage - Input cloud is null"));
+        }
+        else if (output == nullptr)
+        {
+            output = pcl::PointCloud<PointType>::Ptr(pcl::PointCloud<PointType>().makeShared());
+            output->header = input->header;
+        }
+        output->resize(input->size());
+        for (int i = 0; i < input->size(); i++)
+        {
+            output->points[i].x = input->points[i].x + transform(0);
+            output->points[i].y = input->points[i].y + transform(1);
+            output->points[i].z = input->points[i].z + transform(2);
+            output->points[i].intensity = input->points[i].intensity;
+            output->points[i].ring = input->points[i].ring;
+            output->points[i].time = input->points[i].time;
+            output->points[i].curvature = input->points[i].curvature;
+        }
+    }
     void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const Eigen::Vector3d &datum_offset, const std::string &directory, double downsample_size)
     {
         boost::filesystem::create_directories(directory);
-        pcl::PointCloud<PointType>::Ptr merged_transformed(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType> merged_downsamapled;
-        std::cout << "\"SLAM\" - Save merged point cloud to: " << directory << std::endl
-                  << std::endl;
+        pcl::PointCloud<PointType>::Ptr merged(pcl::PointCloud<PointType>().makeShared());
+        pcl::PointCloud<PointType>::Ptr merged_transformed(pcl::PointCloud<PointType>().makeShared());
+        pcl::PointCloud<PointType>::Ptr merged_downsamapled(pcl::PointCloud<PointType>().makeShared());
+        pcl::PointCloud<PointType>::Ptr merged_downsamapled_transformed(pcl::PointCloud<PointType>().makeShared());
 
-        for (int i = 0; i < poses.size(); i++)
-        { // concatenate all point clouds
+        std::cout << "\"SLAM\" - Saving point cloud to: " << directory << std::endl;
+
+        for (int i = 0; i < poses.size(); i++) // build local cloud
+        {
             pcl::PointCloud<PointType> tmp_transformed;
             pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
-            *merged_transformed += tmp_transformed;
+            *merged += tmp_transformed;
         }
-        cout << "Save without datum offset:\n";
-        pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_local.pcd"), *merged_transformed);
-
-        cout << "Save with datum offset:\n";
-        pcl::PointCloud<PointType> merged_datum_transf; // transform the merged cloud with datum_offset
-        Eigen::Affine3d poseOffset(Eigen::Translation3d(datum_offset) * Eigen::Quaterniond::Identity());
-        cout << "Save with offset:\n"
-             << poseOffset.matrix() << endl;
+        cout << "Save without datum offset" << std::endl;
+        pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_local.pcd"), *merged);
 
         if (datum_offset.norm() > 0.01)
         {
-            pcl::transformPointCloud(*merged_transformed, merged_datum_transf, poseOffset);
-            pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_sweref.pcd"), merged_datum_transf);
+            cout << "Save with datum offset: " << datum_offset.transpose() << endl;
+            createTransformedPointCloud(merged, datum_offset, merged_transformed);
+            // 10 points from the merged_transformed
+            pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_sweref.pcd"), *merged_transformed);
+            //pcl::io::savePCDFileASCII( directory + std::string("ascii_sc-lio-sam_sweref.pcd"), *merged_transformed);
         }
 
         cout << "\"SLAM\" - Downsample point cloud resolution " << downsample_size << endl;
-
         pcl::VoxelGrid<PointType> sor;
-        sor.setInputCloud(merged_transformed);
+        sor.setInputCloud(merged);
         sor.setLeafSize(downsample_size, downsample_size, downsample_size);
-        sor.filter(merged_downsamapled);
+        sor.filter(*merged_downsamapled);
 
-        if (!merged_downsamapled.empty())
+        if (!merged_downsamapled->empty())
         {
-            const std::string path_downsampled = directory + std::string("sc-lio-sam_merged_downsampled_leaf_") + std::to_string(downsample_size) + "_local.pcd";
-            pcl::io::savePCDFileBinary(path_downsampled, merged_downsamapled);
-
+            const std::string path_ds = directory + std::string("sc-lio-sam_merged_downsampled_leaf_") + std::to_string(downsample_size) + "_local.pcd";
+            pcl::io::savePCDFileBinary(path_ds, *merged_downsamapled);
             if (datum_offset.norm() > 0.01)
             {
-                // Transform the downsampled cloud with datum_offset
-                pcl::PointCloud<PointType> merged_downsamapled_datum_transf;
-                pcl::transformPointCloud(merged_downsamapled, merged_downsamapled_datum_transf, poseOffset);
-                const std::string path_downsampled_transformed = directory + std::string("sc-lio-sam_merged_downsampled_leaf_") + std::to_string(downsample_size) + "_sweref.pcd";
-                pcl::io::savePCDFileBinary(path_downsampled_transformed, merged_downsamapled_datum_transf);
+                createTransformedPointCloud(merged_downsamapled, datum_offset, merged_downsamapled_transformed);
+                const std::string path_ds_transformed = directory + std::string("sc-lio-sam_merged_downsampled_leaf_") + std::to_string(downsample_size) + "_sweref.pcd";
+                pcl::io::savePCDFileBinary(path_ds_transformed, *merged_downsamapled_transformed);
+                //pcl::io::savePCDFileASCII("ascii_" + path_ds_transformed, *merged_downsamapled_transformed);
             }
         }
         else
-        {
             std::cout << "\"SLAM\" - No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
-        }
     }
 
     void SaveOdom(

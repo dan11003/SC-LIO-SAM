@@ -3,9 +3,7 @@
 
 
 void SaveData(const std::string& directory,
-              std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> lesscornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> flatCloudKeyFrames,
+              std::vector<pcl::PointCloud<PointType>::Ptr> clouds,
               gtsam::Values& isamCurrentEstimate,
               const std::vector<double>& stamps,
               const Eigen::Vector3d& datum_offset,
@@ -16,21 +14,12 @@ void SaveData(const std::string& directory,
 
 
 std::vector<Eigen::Affine3d> poses;
-std::vector<pcl::PointCloud<PointType>::Ptr> clouds;
   for(int i = 0 ; i<isamCurrentEstimate.size(); i++) {
     gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
     Eigen::Affine3d m(pose.matrix());
     poses.push_back(std::move(m));
   }
 
-  for(int i = 0 ; i <cornerCloudKeyFrames.size() ; i++){
-    pcl::PointCloud<PointType>::Ptr cld_tmp = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>());
-    *cld_tmp += *cornerCloudKeyFrames[i];
-    *cld_tmp += *flatCloudKeyFrames[i];
-    *cld_tmp += *lesscornerCloudKeyFrames[i];
-
-    clouds.push_back(cld_tmp);
-  }
   cout <<"\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
 
   if(save_odom)

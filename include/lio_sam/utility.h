@@ -307,9 +307,7 @@ inline float pointDistance(PointType p1, PointType p2)
 }
 
 void SaveData(const std::string &directory,
-              std::vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> lesscornerCloudKeyFrames,
-              std::vector<pcl::PointCloud<PointType>::Ptr> flatCloudKeyFrames,
+              std::vector<pcl::PointCloud<PointType>::Ptr> clouds,
               gtsam::Values &isamCurrentEstimate,
               const std::vector<double> &stamps,
               const Eigen::Vector3d& datum_offset,

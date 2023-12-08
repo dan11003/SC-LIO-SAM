@@ -37,6 +37,7 @@ find_package(PCL REQUIRED )
 find_package (PCL 1.8 REQUIRED)
 find_package(OpenCV REQUIRED QUIET)
 find_package(GTSAM REQUIRED QUIET)
+#find_package(libLAS REQUIRED)
 
 add_message_files(
   DIRECTORY msg
@@ -54,7 +55,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  DEPENDS PCL GTSAM
+  DEPENDS PCL GTSAM #libLAS
 
   CATKIN_DEPENDS 
   std_msgs
@@ -69,6 +70,7 @@ catkin_package(
 # include directories
 include_directories(
 	include
+  #${LIBLAS_INCLUDE_DIRS}
 	${catkin_INCLUDE_DIRS}
 	${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
@@ -78,6 +80,7 @@ include_directories(
 # link directories
 link_directories(
 	include
+  #${LIBLAS_LIBRARY_DIRS}
 	${PCL_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
   ${GTSAM_LIBRARY_DIRS}
@@ -100,12 +103,12 @@ link_directories(
 
 # Mapping Optimization
 
-#set (${PROJECT_NAME}_LIB_SRCS_EXPORT
-#  src/lio_sam/generics.cpp
-#)
+set (${PROJECT_NAME}_LIB_SRCS_EXPORT
+  src/lio_sam/generics.cpp
+)
 
-#add_library(${PROJECT_NAME}_EXPORT ${${PROJECT_NAME}_LIB_SRCS_EXPORT})
-#target_link_libraries(${PROJECT_NAME}_EXPORT ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_LIBRARIES} boost_serialization )
+add_library(${PROJECT_NAME}_EXPORT ${${PROJECT_NAME}_LIB_SRCS_EXPORT})
+target_link_libraries(${PROJECT_NAME}_EXPORT ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_LIBRARIES} boost_serialization )
 
 set (${PROJECT_NAME}_LIB_SRCS
   src/lio_sam/generics.cpp
@@ -117,11 +120,13 @@ set (${PROJECT_NAME}_LIB_SRCS
 add_library(${PROJECT_NAME} ${${PROJECT_NAME}_LIB_SRCS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} )
 
-#${PROJECT_NAME}_EXPORT
 
 add_executable(${PROJECT_NAME}_mapOptmization src/mapOptmization.cpp)
 add_dependencies(${PROJECT_NAME}_mapOptmization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_mapOptmization ${PROJECT_NAME}  ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+
+#add_executable(test_liblas src/test_liblas.cpp)
+#target_link_libraries(test_liblas ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} libLAS LAS las ${LIBLAS_LIBRARIES})
 
 
 

@@ -134,6 +134,8 @@ public:
     vector<pcl::PointCloud<PointType>::Ptr> lesscornerCloudKeyFrames;
     vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;
 
+    vector<pcl::PointCloud<PointType>::Ptr> raw_merged_keyframes;
+
     pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;
     pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;
     pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses3D;
@@ -418,9 +420,10 @@ public:
 
         static double timeLastProcessing = -1;
         // cout << "mappingProcessInterval: " << mappingProcessInterval << endl;
-        ros::Time t1 = ros::Time::now();
+
         if (mappingProcessInterval < 0.0001 || timeLatestScan - timeLastProcessing >= mappingProcessInterval)
         {
+            cout << "Keyframe added" << endl;
             timeLastProcessing = timeLatestScan;
 
             updateInitialGuess();
@@ -439,7 +442,18 @@ public:
 
             publishFrames();
         }
-        // cout << "done: " << ros::Time::now() - t1 << endl;
+        else
+            cout << "Keyframe skipped" << endl;
+        // Tot amount of nodes in graph
+        cout << "isam solution size: " << isamCurrentEstimate.size() << endl;
+        // Tot amount of nodes in the isam graph, not factors
+        cout << "isam factor size: " << isam->getFactorsUnsafe().size() << endl;
+        cout << "isam nodes  size: " << isam->size() << endl;
+        
+
+
+
+        cout << "computational time: " << ros::Time::now() - tLastCallback << endl;
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &gpsMsg)
@@ -562,7 +576,7 @@ public:
             publishGlobalMap();
         }
 
-        if (export_pcd == false)
+    /*    if (export_pcd == false)
         {
             cout << "\"SLAM\" - Saving disabled " << endl;
             return;
@@ -588,9 +602,9 @@ public:
         {
             saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
         }
-        /*if(save_BALM){
+        if(save_BALM){
         SavePosesHomogeneousBALM(isamCurrentEstimate, stamps, BALM_format_pg_filename);
-        }*/
+        
 
         // save map
         cout << "****************************************************" << endl;
@@ -604,7 +618,8 @@ public:
         pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
-        if(use_datum){
+        if (use_datum)
+        {
             cout << "Saving with datum_sweref_x: " << datum_sweref_x << ", datum_sweref_y: " << datum_sweref_y << ", datum_sweref_z: " << datum_sweref_z << endl;
         }
         for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++)
@@ -633,7 +648,7 @@ public:
         *globalMapCloud += *globalCornerCloud;
         *globalMapCloud += *globalSurfCloud;
         pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
-        /****** daniel *****/
+        // Danliel
         // pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
         pcl::PCLPointCloud2 point_cloud2;
         pcl::toPCLPointCloud2(*globalMapCloud, point_cloud2);
@@ -641,6 +656,7 @@ public:
         plywr.writeBinary(savePCDDirectory + "cloudGlobal.ply", point_cloud2);
         cout << "****************************************************" << endl;
         cout << "Saving map to pcd files completed" << endl;
+        */
     }
 
     void publishGlobalMap()
@@ -1785,9 +1801,9 @@ public:
 
     void addOdomFactor()
     {
-        if (cloudKeyPoses3D->points.empty())
+        if (cloudKeyPoses3D->points.empty() )
         {
-            noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-2, 1e-2, M_PI * M_PI, 1e8, 1e8, 1e8).finished()); // rad*rad, meter*meter
+            noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e8, 1e8, 1e8, 1e8, 1e8, 1e8).finished()); // rad*rad, meter*meter
             gtSAMgraph.add(PriorFactor<Pose3>(0, trans2gtsamPose(transformTobeMapped), priorNoise));
             initialEstimate.insert(0, trans2gtsamPose(transformTobeMapped));
 
@@ -2033,11 +2049,17 @@ public:
         pcl::copyPointCloud(*laserCloudLessCornerLastDS, *thisLessCornerKeyFrame);
         pcl::copyPointCloud(*laserCloudSurfLastDS, *thisSurfKeyFrame);
 
-        // save key frame cloud
         stamps.push_back(timeLaserInfoStamp.toSec());
         cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
         lesscornerCloudKeyFrames.push_back(thisLessCornerKeyFrame);
         surfCloudKeyFrames.push_back(thisSurfKeyFrame);
+
+        pcl::PointCloud<PointType>::Ptr cpy_laserCloudRaw(new pcl::PointCloud<PointType>());
+        pcl::copyPointCloud(*laserCloudRaw, *cpy_laserCloudRaw);
+        raw_merged_keyframes.push_back(cpy_laserCloudRaw);
+
+        // save key frame cloud
+        
 
         // Scan Context loop detector - giseop
         // - SINGLE_SCAN_FULL: using downsampled original point cloud (/full_cloud_projected + downsampling)
@@ -2249,7 +2271,7 @@ public:
     {
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
-        SaveData(savePCDDirectory, surfCloudKeyFrames, lesscornerCloudKeyFrames, cornerCloudKeyFrames, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
+        SaveData(savePCDDirectory,raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
         if (saveRefinementGraph)
         {
             cout << "Saving graph for refinement" << endl;
