@@ -74,6 +74,8 @@ public:
     bool saveRefinementGraph = false;
 
     bool use_gps = false;
+    bool gcp_is_triggered = false;
+    bool use_gcp_triggers = false;
     float gps_noise_scaling_factor = 1.0;
     // Velodyne Sensor Configuration: Velodyne
     SensorType sensor;
@@ -169,7 +171,7 @@ public:
 
         nh.param<std::string>("/directory_output", savePCDDirectory, "/Downloads/MISSING_directory_output/");
         savePCDDirectory = IO::CreateFolder(savePCDDirectory, "", "SLAM");
-
+        
         std::string sensorStr;
         nh.param<std::string>("lio_sam/sensor", sensorStr, "");
         if (sensorStr == "velodyne")
@@ -246,6 +248,8 @@ public:
         nh.param<float>("lio_sam/globalMapVisualizationPoseDensity", globalMapVisualizationPoseDensity, 10.0);
         nh.param<float>("lio_sam/globalMapVisualizationLeafSize", globalMapVisualizationLeafSize, 1.0);
         nh.param<bool>("lio_sam/use_gps", use_gps, false);
+        nh.param<bool>("gnss/use_gcp_triggers", use_gcp_triggers, false);
+        
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
 
         /*nh.param<float>("gnss/datum_sweref_x", datum_sweref_x, 0.0);

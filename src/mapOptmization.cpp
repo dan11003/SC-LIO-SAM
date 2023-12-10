@@ -126,6 +126,7 @@ public:
     ros::Subscriber subCloud;
     ros::Subscriber subGPS;
     ros::Subscriber subLoop;
+    ros::Subscriber subGPSTrigger;
 
     std::vector<nav_msgs::Odometry> gpsQueue;
     lio_sam::cloud_info cloudInfo;
@@ -257,10 +258,17 @@ public:
 
         subCloud = nh.subscribe<lio_sam::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
         cout << "use:gps: " << use_gps << ", scaling factor: " << gps_noise_scaling_factor << endl;
-        if (use_gps)
-        {
+        if (use_gps && !use_gcp_triggers){
+            ROS_INFO("Using GPS continuously");
             subGPS = nh.subscribe<nav_msgs::Odometry>(gpsTopic, 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
         }
+        else if (use_gps && use_gcp_triggers)
+        {
+            ROS_INFO("Using GCP triggers");
+            subGPS = nh.subscribe<nav_msgs::Odometry>("/gcp_trigger", 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
+        }
+        //    subGPS = nh.subscribe<nav_msgs::Odometry>("/gps_sweref_gcp", 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
+
         subLoop = nh.subscribe<std_msgs::Float64MultiArray>("lio_loop/loop_closure_detection", 1, &mapOptimization::loopInfoHandler, this, ros::TransportHints().tcpNoDelay());
 
         pubHistoryKeyFrames = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/icp_loop_closure_history_cloud", 1);
@@ -400,11 +408,18 @@ public:
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr &msgIn)
     {
         tLastCallback = ros::Time::now();
-        total_frames++;
-
-        // extract time stamp
         timeLaserInfoStamp = msgIn->header.stamp;
         timeLatestScan = msgIn->header.stamp.toSec();
+        total_frames++;
+        gcp_is_triggered = false;
+        if (use_gcp_triggers)
+        {
+            nav_msgs::Odometry odom;
+            if (getGpsClosestTime(timeLatestScan, odom, false)){
+                gcp_is_triggered = true;
+                cout << "laserCloudInfoHandler - GCP triggered at " << odom.header.stamp << endl;
+            }
+        }
 
         // extract info and feature cloud
         cloudInfo = *msgIn;
@@ -420,10 +435,9 @@ public:
 
         static double timeLastProcessing = -1;
         // cout << "mappingProcessInterval: " << mappingProcessInterval << endl;
-
-        if (mappingProcessInterval < 0.0001 || timeLatestScan - timeLastProcessing >= mappingProcessInterval)
+        const bool force_update = use_gcp_triggers && gcp_is_triggered; // we must update with this frame if we use triggered gps
+        if (force_update || mappingProcessInterval < 0.0001 || timeLatestScan - timeLastProcessing >= mappingProcessInterval)
         {
-            cout << "Keyframe added" << endl;
             timeLastProcessing = timeLatestScan;
 
             updateInitialGuess();
@@ -442,22 +456,11 @@ public:
 
             publishFrames();
         }
-        else
-            cout << "Keyframe skipped" << endl;
-        // Tot amount of nodes in graph
-        cout << "isam solution size: " << isamCurrentEstimate.size() << endl;
-        // Tot amount of nodes in the isam graph, not factors
-        cout << "isam factor size: " << isam->getFactorsUnsafe().size() << endl;
-        cout << "isam nodes  size: " << isam->size() << endl;
-        
-
-
-
-        cout << "computational time: " << ros::Time::now() - tLastCallback << endl;
     }
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &gpsMsg)
     {
+        //ROS_INFO("GPS recieved, time: %s", gpsMsg->child_frame_id.c_str());
         datum_sweref_x = gpsMsg->twist.twist.linear.x;
         datum_sweref_y = gpsMsg->twist.twist.linear.y;
         datum_sweref_z = gpsMsg->twist.twist.linear.z;
@@ -576,87 +579,87 @@ public:
             publishGlobalMap();
         }
 
-    /*    if (export_pcd == false)
-        {
-            cout << "\"SLAM\" - Saving disabled " << endl;
-            return;
-        }
-        cout << "export_pcd: " << export_pcd << ", export_pcd: " << export_pcd << ", save_BALM: " << save_BALM << endl;
+        /*    if (export_pcd == false)
+            {
+                cout << "\"SLAM\" - Saving disabled " << endl;
+                return;
+            }
+            cout << "export_pcd: " << export_pcd << ", export_pcd: " << export_pcd << ", save_BALM: " << save_BALM << endl;
 
-        // save pose graph (runs when programe is closing)
-        cout << "\"SLAM\" - ****************************************************" << endl;
-        cout << "\"SLAM\" - Saving g2o graph..." << endl; // giseop
+            // save pose graph (runs when programe is closing)
+            cout << "\"SLAM\" - ****************************************************" << endl;
+            cout << "\"SLAM\" - Saving g2o graph..." << endl; // giseop
 
-        for (auto &_line : vertices_str)
-            pgSaveStream << _line << std::endl;
-        for (auto &_line : edges_str)
-            pgSaveStream << _line << std::endl;
+            for (auto &_line : vertices_str)
+                pgSaveStream << _line << std::endl;
+            for (auto &_line : edges_str)
+                pgSaveStream << _line << std::endl;
 
-        pgSaveStream.close();
-        // pgVertexSaveStream.close();
-        // pgEdgeSaveStream.close();
+            pgSaveStream.close();
+            // pgVertexSaveStream.close();
+            // pgEdgeSaveStream.close();
 
-        const std::string kitti_format_pg_filename{savePCDDirectory + "optimized_poses.txt"};
-        const std::string BALM_format_pg_filename{saveNodePCDDirectory + "alidarPose.csv"};
-        if (save_Posegraph)
-        {
-            saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
-        }
-        if(save_BALM){
-        SavePosesHomogeneousBALM(isamCurrentEstimate, stamps, BALM_format_pg_filename);
-        
+            const std::string kitti_format_pg_filename{savePCDDirectory + "optimized_poses.txt"};
+            const std::string BALM_format_pg_filename{saveNodePCDDirectory + "alidarPose.csv"};
+            if (save_Posegraph)
+            {
+                saveOptimizedVerticesKITTIformat(isamCurrentEstimate, kitti_format_pg_filename);
+            }
+            if(save_BALM){
+            SavePosesHomogeneousBALM(isamCurrentEstimate, stamps, BALM_format_pg_filename);
 
-        // save map
-        cout << "****************************************************" << endl;
-        cout << "Saving map to pcd files ..." << endl;
-        // save key frame transformations
-        pcl::io::savePCDFileASCII(savePCDDirectory + "trajectory.pcd", *cloudKeyPoses3D);
-        pcl::io::savePCDFileASCII(savePCDDirectory + "transformations.pcd", *cloudKeyPoses6D);
-        // extract global point cloud map
-        pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalCornerCloudDS(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
-        if (use_datum)
-        {
-            cout << "Saving with datum_sweref_x: " << datum_sweref_x << ", datum_sweref_y: " << datum_sweref_y << ", datum_sweref_z: " << datum_sweref_z << endl;
-        }
-        for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++)
-        {
-            PointTypePose pose_i = cloudKeyPoses6D->points[i];
+
+            // save map
+            cout << "****************************************************" << endl;
+            cout << "Saving map to pcd files ..." << endl;
+            // save key frame transformations
+            pcl::io::savePCDFileASCII(savePCDDirectory + "trajectory.pcd", *cloudKeyPoses3D);
+            pcl::io::savePCDFileASCII(savePCDDirectory + "transformations.pcd", *cloudKeyPoses6D);
+            // extract global point cloud map
+            pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
+            pcl::PointCloud<PointType>::Ptr globalCornerCloudDS(new pcl::PointCloud<PointType>());
+            pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
+            pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
+            pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
             if (use_datum)
             {
-                pose_i.x += datum_sweref_x;
-                pose_i.y += datum_sweref_y;
-                pose_i.z += datum_sweref_z;
+                cout << "Saving with datum_sweref_x: " << datum_sweref_x << ", datum_sweref_y: " << datum_sweref_y << ", datum_sweref_z: " << datum_sweref_z << endl;
             }
-            *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i], &pose_i);
-            *globalSurfCloud += *transformPointCloud(surfCloudKeyFrames[i], &pose_i);
-            cout << "\r" << std::flush << "Processing feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
-        }
-        // down-sample and save corner cloud
-        downSizeFilterCorner.setInputCloud(globalCornerCloud);
-        downSizeFilterCorner.filter(*globalCornerCloudDS);
+            for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++)
+            {
+                PointTypePose pose_i = cloudKeyPoses6D->points[i];
+                if (use_datum)
+                {
+                    pose_i.x += datum_sweref_x;
+                    pose_i.y += datum_sweref_y;
+                    pose_i.z += datum_sweref_z;
+                }
+                *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i], &pose_i);
+                *globalSurfCloud += *transformPointCloud(surfCloudKeyFrames[i], &pose_i);
+                cout << "\r" << std::flush << "Processing feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
+            }
+            // down-sample and save corner cloud
+            downSizeFilterCorner.setInputCloud(globalCornerCloud);
+            downSizeFilterCorner.filter(*globalCornerCloudDS);
 
-        pcl::io::savePCDFileASCII(savePCDDirectory + "cloudCorner.pcd", *globalCornerCloudDS);
-        // down-sample and save surf cloud
-        downSizeFilterSurf.setInputCloud(globalSurfCloud);
-        downSizeFilterSurf.filter(*globalSurfCloudDS);
-        pcl::io::savePCDFileASCII(savePCDDirectory + "cloudSurf.pcd", *globalSurfCloudDS);
-        // down-sample and save global point cloud map
-        *globalMapCloud += *globalCornerCloud;
-        *globalMapCloud += *globalSurfCloud;
-        pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
-        // Danliel
-        // pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
-        pcl::PCLPointCloud2 point_cloud2;
-        pcl::toPCLPointCloud2(*globalMapCloud, point_cloud2);
-        pcl::PLYWriter plywr;
-        plywr.writeBinary(savePCDDirectory + "cloudGlobal.ply", point_cloud2);
-        cout << "****************************************************" << endl;
-        cout << "Saving map to pcd files completed" << endl;
-        */
+            pcl::io::savePCDFileASCII(savePCDDirectory + "cloudCorner.pcd", *globalCornerCloudDS);
+            // down-sample and save surf cloud
+            downSizeFilterSurf.setInputCloud(globalSurfCloud);
+            downSizeFilterSurf.filter(*globalSurfCloudDS);
+            pcl::io::savePCDFileASCII(savePCDDirectory + "cloudSurf.pcd", *globalSurfCloudDS);
+            // down-sample and save global point cloud map
+            *globalMapCloud += *globalCornerCloud;
+            *globalMapCloud += *globalSurfCloud;
+            pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
+            // Danliel
+            // pcl::io::savePCDFileASCII(savePCDDirectory + "cloudGlobal.pcd", *globalMapCloud);
+            pcl::PCLPointCloud2 point_cloud2;
+            pcl::toPCLPointCloud2(*globalMapCloud, point_cloud2);
+            pcl::PLYWriter plywr;
+            plywr.writeBinary(savePCDDirectory + "cloudGlobal.ply", point_cloud2);
+            cout << "****************************************************" << endl;
+            cout << "Saving map to pcd files completed" << endl;
+            */
     }
 
     void publishGlobalMap()
@@ -1801,9 +1804,9 @@ public:
 
     void addOdomFactor()
     {
-        if (cloudKeyPoses3D->points.empty() )
+        if (cloudKeyPoses3D->points.empty())
         {
-            noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e8, 1e8, 1e8, 1e8, 1e8, 1e8).finished()); // rad*rad, meter*meter
+            noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e3, 1e3, 1e3, 1e3, 1e3, 1e3).finished()); // rad*rad, meter*meter
             gtSAMgraph.add(PriorFactor<Pose3>(0, trans2gtsamPose(transformTobeMapped), priorNoise));
             initialEstimate.insert(0, trans2gtsamPose(transformTobeMapped));
 
@@ -1893,11 +1896,37 @@ public:
         return true;
     }
 
+    // finds the iterator to the gps reading closest in time to the scan
+    // if itrator is not found, returns false
+    // if iterator is found, it erases the element in the queue
+    bool getGpsClosestTime(const double tScan, nav_msgs::Odometry &closestReading, bool erase = false)
+    {
+        double min_dt = 1e9; // find gps reading closest in time to the scan
+        auto closestReadingItr = gpsQueue.end();
+        for (auto readingItr = gpsQueue.begin(); readingItr != gpsQueue.end(); ++readingItr)
+        {
+            const double dt = std::abs(readingItr->header.stamp.toSec() - tScan);
+            if (dt < min_dt)
+            {
+                min_dt = dt;
+                closestReadingItr = readingItr;
+            }
+        }
+        if (closestReadingItr == gpsQueue.end())
+            return false;
+        else if(min_dt > 0.5)
+            return false;
+        else
+        {
+            closestReading = *closestReadingItr;
+            if (erase)
+                gpsQueue.erase(closestReadingItr);
+            return true;
+        }
+    }
+
     void addGPSFactor()
     {
-        if (gpsQueue.empty() || cloudKeyPoses3D->points.empty())
-            return;
-
         while (!gpsQueue.empty())
         {
             if (timeLatestScan - gpsQueue.front().header.stamp.toSec() > 2.0)
@@ -1905,21 +1934,40 @@ public:
             else
                 break;
         }
+        if (gpsQueue.empty() || cloudKeyPoses3D->points.empty())
+            return;
 
         nav_msgs::Odometry thisGPS;
-        if (!getInterpolatedGpsForTime(timeLatestScan, gpsQueue, thisGPS)) // Ensure that covariance is low here
-            return;
+        if (use_gcp_triggers)
+        {
+            if (!getGpsClosestTime(timeLatestScan, thisGPS, true))
+                return;
+            else{
+                ROS_INFO("GPS integration is triggered, identifier: %s", thisGPS.child_frame_id.c_str());
+            }
+        }
+        else
+        {
+            if (!getInterpolatedGpsForTime(timeLatestScan, gpsQueue, thisGPS))
+                return;
+        }
+
 
         // GPS too noisy, skip
-        float noise_x = thisGPS.pose.covariance[0];
-        float noise_y = thisGPS.pose.covariance[7];
-        float noise_z = thisGPS.pose.covariance[14];
-        if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold)
-            return;
+        float noise_x = std::max(thisGPS.pose.covariance[0],  0.0001);
+        float noise_y = std::max(thisGPS.pose.covariance[7],  0.0001);
+        float noise_z = std::max(thisGPS.pose.covariance[14], 0.0001);
 
         float gps_x = thisGPS.pose.pose.position.x;
         float gps_y = thisGPS.pose.pose.position.y;
         float gps_z = thisGPS.pose.pose.position.z;
+
+        if (!use_gcp_triggers &&  (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold))
+            return;
+
+        /*ROS_INFO_STREAM("Add GPS factor: " << endl);
+        ROS_INFO_STREAM("gps_x: " << gps_x << ", gps_y: " << gps_y << ", gps_z: " << gps_z << endl);
+        ROS_INFO_STREAM("noise_x: " << noise_x << ", noise_y: " << noise_y << ", noise_z: " << noise_z << endl);*/
         if (!useGpsElevation)
         {
             gps_z = transformTobeMapped[5];
@@ -1930,7 +1978,6 @@ public:
         if (abs(gps_x) < 1e-6 && abs(gps_y) < 1e-6)
             return;
 
-        // Add GPS every a few meters
         PointType curGPSPoint;
         curGPSPoint.x = gps_x;
         curGPSPoint.y = gps_y;
@@ -1945,7 +1992,8 @@ public:
         aLoopIsClosed = true;
     }
 
-    void addLoopFactor()
+    void
+    addLoopFactor()
     {
         if (loopIndexQueue.empty())
             return;
@@ -1973,7 +2021,7 @@ public:
 
     void saveKeyFramesAndFactor()
     {
-        if (saveFrame() == false)
+        if (saveFrame() == false && gcp_is_triggered == false)
             return;
 
         // odom factor
@@ -2059,7 +2107,6 @@ public:
         raw_merged_keyframes.push_back(cpy_laserCloudRaw);
 
         // save key frame cloud
-        
 
         // Scan Context loop detector - giseop
         // - SINGLE_SCAN_FULL: using downsampled original point cloud (/full_cloud_projected + downsampling)
@@ -2271,7 +2318,7 @@ public:
     {
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
-        SaveData(savePCDDirectory,raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
+        SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
         if (saveRefinementGraph)
         {
             cout << "Saving graph for refinement" << endl;
