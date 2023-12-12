@@ -319,3 +319,20 @@ void SaveData(const std::string &directory,
               bool save_odom,
               bool save_posegraph,
               bool save_balm2);
+
+class GpsLog{
+    public:
+    GpsLog(const std::string& directory, const std::string& filename);
+
+    ~GpsLog();
+
+    void write(std::string& identifier, double x, double y, double z, double time, double noise_x);
+    
+    void Save();
+
+    private:
+    std::string directory_;
+    std::string filename_;
+    std::ofstream gps_log_file_;
+
+};

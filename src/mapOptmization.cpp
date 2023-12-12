@@ -239,6 +239,7 @@ public:
     std::string saveNodePCDDirectory;
 
     boost::shared_ptr<PoseGraph> graph;
+    std::unique_ptr<GpsLog> gps_log = nullptr;
 
 public:
     mapOptimization()
@@ -258,7 +259,8 @@ public:
 
         subCloud = nh.subscribe<lio_sam::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
         cout << "use:gps: " << use_gps << ", scaling factor: " << gps_noise_scaling_factor << endl;
-        if (use_gps && !use_gcp_triggers){
+        if (use_gps && !use_gcp_triggers)
+        {
             ROS_INFO("Using GPS continuously");
             subGPS = nh.subscribe<nav_msgs::Odometry>(gpsTopic, 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
         }
@@ -311,6 +313,8 @@ public:
         pgTimeSaveStream.precision(dbl::max_digits10);
         // pgVertexSaveStream = std::fstream(savePCDDirectory + "singlesession_vertex.g2o", std::fstream::out);
         // pgEdgeSaveStream = std::fstream(savePCDDirectory + "singlesession_edge.g2o", std::fstream::out);
+        const std::string file_gcp_name = use_gcp_triggers ? "SLAM_GCP.csv" : "SLAM_gps_continuous.csv";
+        gps_log = std::make_unique<GpsLog>(savePCDDirectory, file_gcp_name);
     }
 
     void allocateMemory()
@@ -415,7 +419,8 @@ public:
         if (use_gcp_triggers)
         {
             nav_msgs::Odometry odom;
-            if (getGpsClosestTime(timeLatestScan, odom, false)){
+            if (getGpsClosestTime(timeLatestScan, odom, false))
+            {
                 gcp_is_triggered = true;
                 cout << "laserCloudInfoHandler - GCP triggered at " << odom.header.stamp << endl;
             }
@@ -460,7 +465,7 @@ public:
 
     void gpsHandler(const nav_msgs::Odometry::ConstPtr &gpsMsg)
     {
-        //ROS_INFO("GPS recieved, time: %s", gpsMsg->child_frame_id.c_str());
+        // ROS_INFO("GPS recieved, time: %s", gpsMsg->child_frame_id.c_str());
         datum_sweref_x = gpsMsg->twist.twist.linear.x;
         datum_sweref_y = gpsMsg->twist.twist.linear.y;
         datum_sweref_z = gpsMsg->twist.twist.linear.z;
@@ -1914,7 +1919,7 @@ public:
         }
         if (closestReadingItr == gpsQueue.end())
             return false;
-        else if(min_dt > 0.5)
+        else if (min_dt > 0.5)
             return false;
         else
         {
@@ -1942,7 +1947,8 @@ public:
         {
             if (!getGpsClosestTime(timeLatestScan, thisGPS, true))
                 return;
-            else{
+            else
+            {
                 ROS_INFO("GPS integration is triggered, identifier: %s", thisGPS.child_frame_id.c_str());
             }
         }
@@ -1952,17 +1958,16 @@ public:
                 return;
         }
 
-
         // GPS too noisy, skip
-        float noise_x = std::max(thisGPS.pose.covariance[0],  0.0001);
-        float noise_y = std::max(thisGPS.pose.covariance[7],  0.0001);
+        float noise_x = std::max(thisGPS.pose.covariance[0], 0.0001);
+        float noise_y = std::max(thisGPS.pose.covariance[7], 0.0001);
         float noise_z = std::max(thisGPS.pose.covariance[14], 0.0001);
 
         float gps_x = thisGPS.pose.pose.position.x;
         float gps_y = thisGPS.pose.pose.position.y;
         float gps_z = thisGPS.pose.pose.position.z;
 
-        if (!use_gcp_triggers &&  (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold))
+        if (!use_gcp_triggers && (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold))
             return;
 
         /*ROS_INFO_STREAM("Add GPS factor: " << endl);
@@ -1988,6 +1993,14 @@ public:
         noiseModel::Diagonal::shared_ptr gps_noise = noiseModel::Diagonal::Variances(Vector3 * gps_noise_scaling_factor);
         gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
         gps_constraints_vec.push_back(Eigen::Vector4d(gps_x, gps_y, gps_z, noise_x));
+
+        gps_log->write(thisGPS.child_frame_id,
+                       gps_x + datum_sweref_x,
+                       gps_y + datum_sweref_y,
+                       gps_z + datum_sweref_z - 1.9715,
+                       timeLatestScan,
+                       noise_x);
+
         gtSAMgraph.add(gps_factor);
         aLoopIsClosed = true;
     }
@@ -2333,6 +2346,7 @@ public:
             }
             PoseGraph::SaveGraph(savePCDDirectory + "graph.pgh", graph);
         }
+        gps_log->Save();
     }
 };
 
