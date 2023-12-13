@@ -137,6 +137,7 @@ public:
     float globalMapVisualizationSearchRadius;
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
+    float antenna_to_lidar_offset;
 
     float datum_sweref_x = 0, datum_sweref_y = 0, datum_sweref_z = 0;
     bool use_datum = true;
@@ -251,6 +252,8 @@ public:
         nh.param<bool>("gnss/use_gcp_triggers", use_gcp_triggers, false);
         
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
+        nh.param<float>("lio_sam/antenna_to_lidar_offset", antenna_to_lidar_offset, -0.0496);
+        
 
         /*nh.param<float>("gnss/datum_sweref_x", datum_sweref_x, 0.0);
         nh.param<float>("gnss/datum_sweref_y", datum_sweref_y, 0.0);

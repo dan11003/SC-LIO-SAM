@@ -1965,7 +1965,7 @@ public:
 
         float gps_x = thisGPS.pose.pose.position.x;
         float gps_y = thisGPS.pose.pose.position.y;
-        float gps_z = thisGPS.pose.pose.position.z;
+        float gps_z = thisGPS.pose.pose.position.z + antenna_to_lidar_offset;
 
         if (!use_gcp_triggers && (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold))
             return;
