@@ -18,6 +18,7 @@
 
 #include <gtsam/nonlinear/ISAM2.h>
 
+
 // #include <opencv2/opencv.hpp>
 
 using namespace gtsam;
@@ -141,6 +142,8 @@ public:
 
     float datum_sweref_x = 0, datum_sweref_y = 0, datum_sweref_z = 0;
     bool use_datum = true;
+    bool use_gcp_log_file = false;
+    std::string gps_logfile_path = "";
 
     ParamServer()
     {
@@ -250,6 +253,9 @@ public:
         nh.param<float>("lio_sam/globalMapVisualizationLeafSize", globalMapVisualizationLeafSize, 1.0);
         nh.param<bool>("lio_sam/use_gps", use_gps, false);
         nh.param<bool>("gnss/use_gcp_triggers", use_gcp_triggers, false);
+        nh.param<bool>("gnss/use_gcp_log_file", use_gcp_log_file, false);
+        nh.param<std::string>("gnss/gps_logfile_path", gps_logfile_path, "");
+        
         
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
         nh.param<float>("lio_sam/antenna_to_lidar_offset", antenna_to_lidar_offset, -0.0496);
@@ -323,19 +329,18 @@ void SaveData(const std::string &directory,
               bool save_posegraph,
               bool save_balm2);
 
-class GpsLog{
-    public:
-    GpsLog(const std::string& directory, const std::string& filename);
-
-    ~GpsLog();
-
-    void write(std::string& identifier, double x, double y, double z, double time, double noise_x);
+class GpsReadLog{
     
-    void Save();
+    public:
+
+    GpsReadLog(const std::string& path);
+
+    void Read(std::vector<nav_msgs::Odometry>& gps_log);
+
+    std::vector<std::string> split(const std::string &s, char delimiter);
 
     private:
-    std::string directory_;
     std::string filename_;
-    std::ofstream gps_log_file_;
+    std::ifstream file;
 
 };

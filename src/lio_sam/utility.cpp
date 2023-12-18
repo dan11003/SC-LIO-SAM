@@ -34,50 +34,53 @@ void SaveData(const std::string &directory,
   IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
 }
 
-GpsLog::GpsLog(const std::string &directory, const std::string &filename) : directory_(directory), filename_(filename)
-{
-  if (!directory_.empty())
-  {
-    if (directory_.back() != '/')
-    {
-      directory_ += '/';
-    }
-    if (!boost::filesystem::exists(directory_))
-    {
-      boost::filesystem::create_directories(directory_);
-    }
-  }
-  if (!filename_.empty())
-  {
-    gps_log_file_.open(directory_ + filename_);
-    if (gps_log_file_.is_open())
-    {
-      gps_log_file_ << "Identifier, Latitude, Longitude, Adjusted Altitude, Time" << std::endl;
-    }
-    else
-    {
-      std::cerr << "Failed to open GPS log file: " << directory_ + filename_ << std::endl;
-    }
+
+GpsReadLog::GpsReadLog(const std::string& path){
+  //open filestream
+  cout << "Load gcp log from: " << path << endl;
+  file.open(path);
+  if(!file.is_open()){
+    std::cerr << "Could not open file " << path << std::endl;
   }
 }
-void GpsLog::write(std::string &identifier, double x, double y, double z, double time, double noise_x)
-{
-  if (gps_log_file_.is_open())
-  {
-    //write with fixed precision, non scientific notation
-    gps_log_file_ << std::fixed << std::setprecision(10) << identifier << ", " << x << ", " << y << ", " << z << ", " << time << ", " << noise_x << std::endl;
-  }
-}
-void GpsLog::Save()
-{
-  if (gps_log_file_.is_open())
-  {
-    cout << "GPS log Saved to " << directory_ + filename_ << endl;
-    gps_log_file_.close();
-  }
+std::vector<std::string> GpsReadLog::split(const std::string &s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::istringstream tokenStream(s);
+    std::string token;
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
 }
 
-GpsLog::~GpsLog()
-{
-  Save();
+void GpsReadLog::Read(std::vector<nav_msgs::Odometry>& gps_log){
+  cout << "Reading gcp" << endl;
+  std::string line;
+  std::getline(file, line);
+    
+    while (std::getline(file, line)) {
+        // Split the line into fields
+        std::vector<std::string> fields = split(line, ',');
+
+        // Assuming the CSV format has three fields: Identifier	Latitude	Longitude	AdjustedAltitude	Time
+        if (fields.size() >= 5) {
+          nav_msgs::Odometry gps;
+          const std::string identifier = fields[0];
+          gps.child_frame_id = identifier;
+          gps.pose.pose.position.y = std::stod(fields[1]);
+          gps.pose.pose.position.x = std::stod(fields[2]);
+          gps.pose.pose.position.z = std::stod(fields[3]);
+          const double stamp = std::stod(fields[4]);
+          gps.header.stamp = ros::Time(stamp);
+          gps.pose.covariance[0] = 0.01;//
+          gps.pose.covariance[7] = 0.01;
+          gps.pose.covariance[14] = 0.01;
+          gps.twist.twist.linear.x = 0.0; // please insert something reasonable here
+          gps.twist.twist.linear.y = 0.0;
+          gps.twist.twist.linear.z = 0.0;
+
+          gps_log.push_back(gps);
+        }
+    }
+    file.close();
 }
