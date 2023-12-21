@@ -42,19 +42,18 @@ namespace IO
             pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
             *merged += tmp_transformed;
         }
-        cout << "Save without datum offset" << std::endl;
-        pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_local.pcd"), *merged);
+        pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam.pcd"), *merged);
 
-        if (datum_offset.norm() > 0.01)
+        /*if (datum_offset.norm() > 0.01)
         {
             cout << "Save with datum offset: " << datum_offset.transpose() << endl;
             createTransformedPointCloud(merged, datum_offset, merged_transformed);
             // 10 points from the merged_transformed
             pcl::io::savePCDFileBinary(directory + std::string("sc-lio-sam_sweref.pcd"), *merged_transformed);
             //pcl::io::savePCDFileASCII( directory + std::string("ascii_sc-lio-sam_sweref.pcd"), *merged_transformed);
-        }
+        }*/
 
-        cout << "\"SLAM\" - Downsample point cloud resolution " << downsample_size << endl;
+        /*cout << "\"SLAM\" - Downsample point cloud resolution " << downsample_size << endl;
         pcl::VoxelGrid<PointType> sor;
         sor.setInputCloud(merged);
         sor.setLeafSize(downsample_size, downsample_size, downsample_size);
@@ -74,6 +73,7 @@ namespace IO
         }
         else
             std::cout << "\"SLAM\" - No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
+        */
     }
 
     void SaveOdom(
