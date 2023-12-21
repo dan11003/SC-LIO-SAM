@@ -1,5 +1,20 @@
 #include "lio_sam/utility.h"
 
+
+void SaveDatumOffset(const Eigen::Vector3d &datum_offset, const std::string &filePath) {
+    std::ofstream outFile;
+    outFile.open(filePath, std::ios::out | std::ios::app); // Open in append mode
+
+    if (outFile.is_open()) {
+        // Set the precision to the maximum possible for a double
+        outFile << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+        outFile << datum_offset.x() << "," << datum_offset.y() << "," << datum_offset.z() << std::endl;
+        outFile.close();
+    } else {
+        std::cerr << "Could not open file " << filePath << std::endl;
+    }
+}
+
 void SaveData(const std::string &directory,
               std::vector<pcl::PointCloud<PointType>::Ptr> clouds,
               gtsam::Values &isamCurrentEstimate,
@@ -10,6 +25,9 @@ void SaveData(const std::string &directory,
               bool save_posegraph,
               bool save_balm2)
 {
+   // Specify the file path where you want to save the CSV
+  std::string datumOffsetFilePath = directory + "datum_offset.csv";
+  SaveDatumOffset(datum_offset, datumOffsetFilePath);
 
     std::vector<Eigen::Affine3d> poses;
     for (int i = 0; i < isamCurrentEstimate.size(); i++)

@@ -331,17 +331,17 @@ public:
         int unused = system((std::string("exec rm -r ") + savePCDDirectory).c_str());
         unused = system((std::string("mkdir ") + savePCDDirectory).c_str());
 
-        saveSCDDirectory = savePCDDirectory + "SCDs/"; // SCD: scan context descriptor
-        unused = system((std::string("exec rm -r ") + saveSCDDirectory).c_str());
-        unused = system((std::string("mkdir -p ") + saveSCDDirectory).c_str());
+        //saveSCDDirectory = savePCDDirectory + "SCDs/"; // SCD: scan context descriptor
+        //unused = system((std::string("exec rm -r ") + saveSCDDirectory).c_str());
+        //unused = system((std::string("mkdir -p ") + saveSCDDirectory).c_str());
 
-        saveNodePCDDirectory = savePCDDirectory + "Scans/";
-        unused = system((std::string("exec rm -r ") + saveNodePCDDirectory).c_str());
-        unused = system((std::string("mkdir -p ") + saveNodePCDDirectory).c_str());
+        //saveNodePCDDirectory = savePCDDirectory + "Scans/";
+        //unused = system((std::string("exec rm -r ") + saveNodePCDDirectory).c_str());
+        //unused = system((std::string("mkdir -p ") + saveNodePCDDirectory).c_str());
 
-        pgSaveStream = std::fstream(savePCDDirectory + "singlesession_posegraph.g2o", std::fstream::out);
-        pgTimeSaveStream = std::fstream(savePCDDirectory + "times.txt", std::fstream::out);
-        pgTimeSaveStream.precision(dbl::max_digits10);
+        //pgSaveStream = std::fstream(savePCDDirectory + "singlesession_posegraph.g2o", std::fstream::out);
+        //pgTimeSaveStream = std::fstream(savePCDDirectory + "times.txt", std::fstream::out);
+        //pgTimeSaveStream.precision(dbl::max_digits10);
         // pgVertexSaveStream = std::fstream(savePCDDirectory + "singlesession_vertex.g2o", std::fstream::out);
         // pgEdgeSaveStream = std::fstream(savePCDDirectory + "singlesession_edge.g2o", std::fstream::out);
         //const std::string file_gcp_name = use_gcp_triggers ? "SLAM_GCP.csv" : "SLAM_gps_continuous.csv";
@@ -2021,18 +2021,11 @@ public:
 
         gtsam::Vector Vector3(3);
         Vector3 << noise_x , noise_y, noise_z;
-        cout << "Add gps: " << gps_x << ", " << gps_y << ", " << gps_z << endl;
-        cout << "GPS noise: " << Vector3 << endl;
+        ROS_INFO_STREAM_THROTTLE(5, "Adding gps: " << gps_x << ", " << gps_y << ", " << gps_z << ", noise: " << Vector3 << endl);
+        
         noiseModel::Diagonal::shared_ptr gps_noise = noiseModel::Diagonal::Variances(Vector3 * gps_noise_scaling_factor);
         gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
         gps_constraints_vec.push_back(Eigen::Vector4d(gps_x, gps_y, gps_z, noise_x));
-
-        /*gps_log->write(thisGPS.child_frame_id,
-                       gps_x + datum_sweref_x,
-                       gps_y + datum_sweref_y,
-                       gps_z + datum_sweref_z - 1.9715,
-                       timeLatestScan,
-                       noise_x);*/
 
         gtSAMgraph.add(gps_factor);
         aLoopIsClosed = true;
