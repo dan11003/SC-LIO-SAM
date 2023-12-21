@@ -168,7 +168,7 @@ public:
         nh.param<bool>("/slam_save_balm2", save_BALM2, false);
         nh.param<bool>("/slam_save_posegraph", save_Posegraph, false);
         nh.param<bool>("/slam_save_odom", save_odom, false);
-        nh.param<bool>("/export_slam_pcd", export_pcd, false);
+        nh.param<bool>("/export_slam_pcd", export_pcd, true);
         nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, false);
 
         cout << "SLAM - save_BALM: " << save_BALM << "SLAM - save_BALM2: " << save_BALM2 << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;

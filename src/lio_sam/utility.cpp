@@ -11,13 +11,13 @@ void SaveData(const std::string &directory,
               bool save_balm2)
 {
 
-  std::vector<Eigen::Affine3d> poses;
-  for (int i = 0; i < isamCurrentEstimate.size(); i++)
-  {
-    gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
-    Eigen::Affine3d m(pose.matrix());
-    poses.push_back(std::move(m));
-  }
+    std::vector<Eigen::Affine3d> poses;
+    for (int i = 0; i < isamCurrentEstimate.size(); i++)
+    {
+      gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
+      Eigen::Affine3d m(pose.matrix());
+      poses.push_back(std::move(m));
+    }
 
   cout << "\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
 
