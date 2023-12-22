@@ -1,12 +1,61 @@
 #include "lio_sam/utility.h"
+#include <fstream>
+#include <iomanip>
+#include <gtsam/geometry/Pose3.h>
+#include <Eigen/Dense>
+#include <ros/ros.h>
+#include <vector>
+#include "image_msg/ImageTimestamp.h"  // Include your custom message header
+
+
+std::vector<ros::Time> imageTimestamps;
+
+void imageTimestampCallback(const image_msg::ImageTimestamp::ConstPtr& msg) {
+    imageTimestamps.push_back(msg->header.stamp);
+}
+
+
+void SaveTimeAndPose(const std::vector<double> &stamps, 
+                     gtsam::Values &isamCurrentEstimate,
+                     const Eigen::Vector3d &datum_offset,  
+                     const std::string &filePath) {
+    std::ofstream outFile(filePath, std::ios::out | std::ios::app);
+
+    if (outFile.is_open()) {
+        outFile << "Timestamp,X Position,Y Position,Z Position,Yaw,Pitch,Roll\n";
+        outFile << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+
+        for (const auto& imageTimestamp : imageTimestamps) {
+            for (int i = 0; i < static_cast<int>(isamCurrentEstimate.size()); i++) {
+                double timestamp = stamps[i];
+                if (fabs(timestamp - imageTimestamp.toSec()) < 10) {  // Threshold to match timestamp
+                    gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
+                    Eigen::Vector3d globalPosition = pose.translation() + datum_offset;
+                    gtsam::Rot3 rotation = pose.rotation();
+                    double yaw = rotation.yaw();
+                    double pitch = rotation.pitch();
+                    double roll = rotation.roll();
+
+                    outFile << timestamp << "," << globalPosition.x() << ","
+                            << globalPosition.y() << "," << globalPosition.z() << ","
+                            << yaw << "," << pitch << "," << roll << std::endl;
+                    break;  // Break the loop once the matching timestamp is found
+                }
+            }
+        }
+        outFile.close();
+    } else {
+        std::cerr << "Could not open file " << filePath << std::endl;
+    }
+}
+
 
 
 void SaveDatumOffset(const Eigen::Vector3d &datum_offset, const std::string &filePath) {
     std::ofstream outFile;
-    outFile.open(filePath, std::ios::out | std::ios::app); // Open in append mode
+    outFile.open(filePath, std::ios::out | std::ios::app);
 
     if (outFile.is_open()) {
-        // Set the precision to the maximum possible for a double
         outFile << std::setprecision(std::numeric_limits<double>::digits10 + 1);
         outFile << datum_offset.x() << "," << datum_offset.y() << "," << datum_offset.z() << std::endl;
         outFile.close();
@@ -25,80 +74,80 @@ void SaveData(const std::string &directory,
               bool save_posegraph,
               bool save_balm2)
 {
-   // Specify the file path where you want to save the CSV
-  std::string datumOffsetFilePath = directory + "datum_offset.csv";
-  SaveDatumOffset(datum_offset, datumOffsetFilePath);
+    std::string datumOffsetFilePath = directory + "datum_offset.csv";
+    SaveDatumOffset(datum_offset, datumOffsetFilePath);
+  
+    std::string timePoseFilePath = directory + "time_pose_XYZ.csv";
+    SaveTimeAndPose(stamps, isamCurrentEstimate, datum_offset, timePoseFilePath);
 
     std::vector<Eigen::Affine3d> poses;
-    for (int i = 0; i < isamCurrentEstimate.size(); i++)
-    {
-      gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
-      Eigen::Affine3d m(pose.matrix());
-      poses.push_back(std::move(m));
+    for (size_t i = 0; i < isamCurrentEstimate.size(); i++) {
+        gtsam::Pose3 pose = isamCurrentEstimate.at<gtsam::Pose3>(i);
+        Eigen::Affine3d m(pose.matrix());
+        poses.push_back(std::move(m));
     }
 
-  cout << "\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
+    cout << "\"SLAM\" - Save poses: " << poses.size() << ", stamps: " << stamps.size() << ", clouds: " << clouds.size() << endl;
 
-  if (save_odom)
-    IO::SaveOdom(directory + "odom/", poses, stamps, clouds);
-  if (save_balm)
-    IO::SavePosesHomogeneousBALM(clouds, poses, directory + "balm/", 0.3);
-  if (save_balm2)
-    IO::SaveBALM2(directory + "BALM2/", poses, stamps, clouds);
-  if (save_posegraph)
-  {
-    std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
-  }
-  IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
+    if (save_odom)
+        IO::SaveOdom(directory + "odom/", poses, stamps, clouds);
+    if (save_balm)
+        IO::SavePosesHomogeneousBALM(clouds, poses, directory + "balm/", 0.3);
+    if (save_balm2)
+        IO::SaveBALM2(directory + "BALM2/", poses, stamps, clouds);
+    if (save_posegraph)
+        std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
+
+    IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
 }
 
+	GpsReadLog::GpsReadLog(const std::string& path){
+	  //open filestream
+	  cout << "Load gcp log from: " << path << endl;
+	  file.open(path);
+	  if(!file.is_open()){
+		std::cerr << "Could not open file " << path << std::endl;
+	  }
+	}
+	std::vector<std::string> GpsReadLog::split(const std::string &s, char delimiter) {
+		std::vector<std::string> tokens;
+		std::istringstream tokenStream(s);
+		std::string token;
+		while (std::getline(tokenStream, token, delimiter)) {
+		    tokens.push_back(token);
+		}
+		return tokens;
+	}
 
-GpsReadLog::GpsReadLog(const std::string& path){
-  //open filestream
-  cout << "Load gcp log from: " << path << endl;
-  file.open(path);
-  if(!file.is_open()){
-    std::cerr << "Could not open file " << path << std::endl;
-  }
-}
-std::vector<std::string> GpsReadLog::split(const std::string &s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::istringstream tokenStream(s);
-    std::string token;
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
+	void GpsReadLog::Read(std::vector<nav_msgs::Odometry>& gps_log){
+	  cout << "Reading gcp" << endl;
+	  std::string line;
+	  std::getline(file, line);
+		
+		while (std::getline(file, line)) {
+		    // Split the line into fields
+		    std::vector<std::string> fields = split(line, ',');
 
-void GpsReadLog::Read(std::vector<nav_msgs::Odometry>& gps_log){
-  cout << "Reading gcp" << endl;
-  std::string line;
-  std::getline(file, line);
-    
-    while (std::getline(file, line)) {
-        // Split the line into fields
-        std::vector<std::string> fields = split(line, ',');
+		    // Assuming the CSV format has three fields: Identifier Latitude  Longitude AdjustedAltitude  Time
+		    if (fields.size() >= 5) {
+		      nav_msgs::Odometry gps;
+		      const std::string identifier = fields[0];
+		      gps.child_frame_id = identifier;
+		      gps.pose.pose.position.y = std::stod(fields[1]);
+		      gps.pose.pose.position.x = std::stod(fields[2]);
+		      gps.pose.pose.position.z = std::stod(fields[3]);
+		      const double stamp = std::stod(fields[4]);
+		      gps.header.stamp = ros::Time(stamp);
+		      gps.pose.covariance[0] = 0.01;//
+		      gps.pose.covariance[7] = 0.01;
+		      gps.pose.covariance[14] = 0.01;
+		      gps.twist.twist.linear.x = 0.0; // please insert something reasonable here
+		      gps.twist.twist.linear.y = 0.0;
+		      gps.twist.twist.linear.z = 0.0;
 
-        // Assuming the CSV format has three fields: Identifier	Latitude	Longitude	AdjustedAltitude	Time
-        if (fields.size() >= 5) {
-          nav_msgs::Odometry gps;
-          const std::string identifier = fields[0];
-          gps.child_frame_id = identifier;
-          gps.pose.pose.position.y = std::stod(fields[1]);
-          gps.pose.pose.position.x = std::stod(fields[2]);
-          gps.pose.pose.position.z = std::stod(fields[3]);
-          const double stamp = std::stod(fields[4]);
-          gps.header.stamp = ros::Time(stamp);
-          gps.pose.covariance[0] = 0.01;//
-          gps.pose.covariance[7] = 0.01;
-          gps.pose.covariance[14] = 0.01;
-          gps.twist.twist.linear.x = 0.0; // please insert something reasonable here
-          gps.twist.twist.linear.y = 0.0;
-          gps.twist.twist.linear.z = 0.0;
+		      gps_log.push_back(gps);
+		    }
+		}
+		file.close();
+	}
 
-          gps_log.push_back(gps);
-        }
-    }
-    file.close();
-}
