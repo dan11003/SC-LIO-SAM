@@ -468,6 +468,7 @@ public:
             {
                 camera_is_triggered = true;
                 cout << "laserCloudInfoHandler - Camera triggered at " << camera.header.stamp << endl;
+                cout << "time laser: " << timeLatestScan << ", time camera: " << camera.header.stamp.toSec() << ", tdiff: " << timeLatestScan - camera.header.stamp.toSec() << endl;
             }
         }
 

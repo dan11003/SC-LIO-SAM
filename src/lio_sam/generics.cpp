@@ -120,7 +120,6 @@ namespace IO
         // std::cout << "Save clouds: " << clouds.size() << std::endl;
         const std::string poseFilename = dump_directory + "pose.json";
         std::ofstream data_ofs(poseFilename);
-        data_ofs << "x, y, z, w, qx, qy, qz, qw" << endl;
         for (int i = 0; i < clouds.size(); i++)
         {
             std::stringstream ss;
@@ -141,8 +140,9 @@ namespace IO
         std::map<int,sensor_msgs::CompressedImage> &images)
     {
         boost::filesystem::create_directories(directory);
-        const std::string filename = directory + "cameraPoses.csv";
-        std::fstream stream(filename.c_str(), std::fstream::out);
+        const std::string cam_filename = directory + "cameraPoses.csv";
+        std::fstream cam_stream(cam_filename.c_str(), std::fstream::out);
+
         std::cout << "\"SLAM\" - Save Images and Poses to: " << directory << std::endl;
         //iterate through all images
         int img_nr = 0;
@@ -156,18 +156,26 @@ namespace IO
             const Eigen::Quaterniond q(pose.linear());
           
             //save image
-            const std::string imgPath = directory + std::string("image") + std::to_string(img_nr++) + ".jpg";
+            const std::string imgPath = directory + std::to_string(img_nr++) + ".jpg";
             std::ofstream imgFile(imgPath, std::ios::out | std::ios::binary);
             imgFile.write((char*)&comprImage.data[0], comprImage.data.size());
             imgFile.close();
             //save pose with 5 decimals precision, non scientific
-            stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
+            cam_stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
         }
-        stream.close();
+        cam_stream.close();
+
+        const std::string pose_filename = directory + "allPoses.csv";
+        std::fstream all_stream(pose_filename.c_str(), std::fstream::out);
+        for(int i = 0; i < poses.size(); i++){
+            const Eigen::Affine3d pose = poses[i];
+            const Eigen::Quaterniond q(pose.linear());
+            all_stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
+        }
+        all_stream.close();
         
 
-        
-
+    
     }
 
     void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<PointType>::Ptr> &clouds, const std::vector<Eigen::Affine3d> &poses, const std::string &directory, double downsample_size)
