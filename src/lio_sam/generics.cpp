@@ -120,6 +120,7 @@ namespace IO
         // std::cout << "Save clouds: " << clouds.size() << std::endl;
         const std::string poseFilename = dump_directory + "pose.json";
         std::ofstream data_ofs(poseFilename);
+        data_ofs << "x, y, z, w, qx, qy, qz, qw" << endl;
         for (int i = 0; i < clouds.size(); i++)
         {
             std::stringstream ss;
@@ -132,6 +133,41 @@ namespace IO
             data_ofs << std::fixed << std::setprecision(9) << trans(0) << " " << trans(1) << " " << trans(2) << " " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
         }
         data_ofs.close();
+    }
+    
+    void SaveImages(const std::string &directory,
+        const std::vector<Eigen::Affine3d> &poses,
+        const std::vector<double> &keyframe_stamps,
+        std::map<int,sensor_msgs::CompressedImage> &images)
+    {
+        boost::filesystem::create_directories(directory);
+        const std::string filename = directory + "cameraPoses.csv";
+        std::fstream stream(filename.c_str(), std::fstream::out);
+        std::cout << "\"SLAM\" - Save Images and Poses to: " << directory << std::endl;
+        //iterate through all images
+        int img_nr = 0;
+        for(const auto &[idx,comprImage] : images){
+            //get pose
+            if(idx >= poses.size()){
+                std::throw_with_nested(std::runtime_error("Incorrect usage - idx out of bounds"));
+                return;
+            }
+            const Eigen::Affine3d pose = poses[idx];
+            const Eigen::Quaterniond q(pose.linear());
+          
+            //save image
+            const std::string imgPath = directory + std::string("image") + std::to_string(img_nr++) + ".jpg";
+            std::ofstream imgFile(imgPath, std::ios::out | std::ios::binary);
+            imgFile.write((char*)&comprImage.data[0], comprImage.data.size());
+            imgFile.close();
+            //save pose with 5 decimals precision, non scientific
+            stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
+        }
+        stream.close();
+        
+
+        
+
     }
 
     void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<PointType>::Ptr> &clouds, const std::vector<Eigen::Affine3d> &poses, const std::string &directory, double downsample_size)

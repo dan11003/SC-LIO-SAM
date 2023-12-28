@@ -20,10 +20,12 @@ void SaveData(const std::string &directory,
               gtsam::Values &isamCurrentEstimate,
               const std::vector<double> &stamps,
               const Eigen::Vector3d &datum_offset,
+              std::map<int,sensor_msgs::CompressedImage> &images,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,
-              bool save_balm2)
+              bool save_balm2,
+              bool save_camera_images)
 {
    // Specify the file path where you want to save the CSV
   std::string datumOffsetFilePath = directory + "datum_offset.csv";
@@ -46,9 +48,10 @@ void SaveData(const std::string &directory,
   if (save_balm2)
     IO::SaveBALM2(directory + "BALM2/", poses, stamps, clouds);
   if (save_posegraph)
-  {
     std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
-  }
+  if(save_camera_images)
+    IO::SaveImages(directory + "images/", poses, stamps, images);
+
   IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
 }
 

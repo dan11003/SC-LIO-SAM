@@ -127,8 +127,10 @@ public:
     ros::Subscriber subGPS;
     ros::Subscriber subLoop;
     ros::Subscriber subGPSTrigger;
+    ros::Subscriber subCamera;
 
     std::vector<nav_msgs::Odometry> gpsQueue;
+    std::vector<sensor_msgs::CompressedImage> cameraQueue;
     lio_sam::cloud_info cloudInfo;
 
     vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames;
@@ -259,6 +261,9 @@ public:
 
         subCloud = nh.subscribe<lio_sam::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
         cout << "use:gps: " << use_gps << ", scaling factor: " << gps_noise_scaling_factor << endl;
+        if(use_camera_trigger){
+            subCamera = nh.subscribe<sensor_msgs::CompressedImage>("/camera_trigger/image_raw/compressed", 200, &mapOptimization::cameraHandler, this, ros::TransportHints().tcpNoDelay());
+        }
         if (use_gps && !use_gcp_triggers)
         {
             ROS_INFO("Using GPS continuously");
@@ -447,6 +452,7 @@ public:
         timeLatestScan = msgIn->header.stamp.toSec();
         total_frames++;
         gcp_is_triggered = false;
+        camera_is_triggered = false;
         if (use_gcp_triggers)
         {
             nav_msgs::Odometry odom;
@@ -454,6 +460,14 @@ public:
             {
                 gcp_is_triggered = true;
                 cout << "laserCloudInfoHandler - GCP triggered at " << odom.header.stamp << endl;
+            }
+        }
+        if(use_camera_trigger){
+            sensor_msgs::CompressedImage camera;
+            if (getCameraClosestTime(timeLatestScan, camera, false))
+            {
+                camera_is_triggered = true;
+                cout << "laserCloudInfoHandler - Camera triggered at " << camera.header.stamp << endl;
             }
         }
 
@@ -471,7 +485,7 @@ public:
 
         static double timeLastProcessing = -1;
         // cout << "mappingProcessInterval: " << mappingProcessInterval << endl;
-        const bool force_update = use_gcp_triggers && gcp_is_triggered; // we must update with this frame if we use triggered gps
+        const bool force_update = (camera_is_triggered && use_camera_trigger) || (use_gcp_triggers && gcp_is_triggered); // we must update with this frame if we use triggered gps
         if (force_update || mappingProcessInterval < 0.0001 || timeLatestScan - timeLastProcessing >= mappingProcessInterval)
         {
             timeLastProcessing = timeLatestScan;
@@ -501,6 +515,12 @@ public:
         datum_sweref_y = gpsMsg->twist.twist.linear.y;
         datum_sweref_z = gpsMsg->twist.twist.linear.z;
         gpsQueue.push_back(*gpsMsg); // callback with timestmap
+    }
+    void cameraHandler(const sensor_msgs::CompressedImage::ConstPtr &cameraMsg)
+    {
+        cameraQueue.push_back(*cameraMsg); // callback with timestmap
+        cout << "camera trigger recieved, time: " << cameraMsg->header.stamp << endl;
+        cout << cameraQueue.size() << endl;
     }
 
     void pointAssociateToMap(PointType const *const pi, PointType *const po)
@@ -1960,6 +1980,52 @@ public:
             return true;
         }
     }
+    bool getCameraClosestTime(const double tScan, sensor_msgs::CompressedImage &closestReading, bool erase = false)
+    {
+        const auto min_dt_itr = std::min_element(cameraQueue.begin(), cameraQueue.end(),
+        [tScan](const auto& lhs, const auto& rhs) {
+            return std::abs(lhs.header.stamp.toSec() - tScan) < std::abs(rhs.header.stamp.toSec() - tScan);
+        });
+
+        if (min_dt_itr == cameraQueue.end() || std::abs(min_dt_itr->header.stamp.toSec() - tScan) > 0.1)
+            return false;
+
+        closestReading = *min_dt_itr;
+        if (erase)
+            cameraQueue.erase(min_dt_itr);
+
+        return true;
+    }
+
+
+    void storeCameraKeyframe(){
+        //Maintenance
+        while (!cameraQueue.empty())
+        {
+            if (timeLatestScan - cameraQueue.front().header.stamp.toSec() > 2.0)
+                cameraQueue.erase(cameraQueue.begin());
+            else
+                break;
+        }
+        if (cameraQueue.empty() || cloudKeyPoses3D->points.empty())
+            return;
+
+        sensor_msgs::CompressedImage thisCamera;
+        if (use_camera_trigger)
+        {
+            if (!getCameraClosestTime(timeLatestScan, thisCamera, true))
+                return;
+            else
+            {
+                ROS_INFO("Camera integration is triggered, identifier: %s", thisCamera.header.frame_id.c_str());
+            }
+        }
+        const size_t idx = cloudKeyPoses3D->size();
+        cout << "idx: " << idx << endl;
+        camera_buffer[idx] = std::move(thisCamera);
+        cout << "Saved camera_buffer[idx]: " << camera_buffer[idx].header.frame_id << endl;
+
+    }
 
     void addGPSFactor()
     {
@@ -1996,7 +2062,7 @@ public:
 
         float gps_x = thisGPS.pose.pose.position.x;
         float gps_y = thisGPS.pose.pose.position.y;
-        float gps_z = thisGPS.pose.pose.position.z + antenna_to_lidar_offset;
+        float gps_z = thisGPS.pose.pose.position.z; //+ antenna_to_lidar_offset;
 
         if (!use_gcp_triggers && (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold))
             return;
@@ -2060,7 +2126,7 @@ public:
 
     void saveKeyFramesAndFactor()
     {
-        if (saveFrame() == false && gcp_is_triggered == false)
+        if (saveFrame() == false && gcp_is_triggered == false && camera_is_triggered == false)
             return;
 
         // odom factor
@@ -2068,6 +2134,8 @@ public:
 
         // gps factor
         addGPSFactor();
+
+        storeCameraKeyframe();
 
         // loop factor
         addLoopFactor(); // radius search loop factor (I changed the orignal func name addLoopFactor to addLoopFactor)
@@ -2357,7 +2425,7 @@ public:
     {
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
-        SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, save_BALM, save_odom, save_Posegraph, save_BALM2);
+        SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, camera_buffer, save_BALM, save_odom, save_Posegraph, save_BALM2, save_camera_images);
         if (saveRefinementGraph)
         {
             cout << "Saving graph for refinement" << endl;

@@ -54,7 +54,7 @@
 #include "eigen3/Eigen/Dense"
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Core>
-
+#include "sensor_msgs/CompressedImage.h"
 
 
 #include <limits>
@@ -136,6 +136,11 @@ namespace IO{
 void createTransformedPointCloud(const pcl::PointCloud<PointType>::Ptr input, const Eigen::Vector3d& transform, pcl::PointCloud<PointType>::Ptr output);
 
 void SaveMerged(const std::vector<pcl::PointCloud<PointType>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const Eigen::Vector3d& datum_offset, const std::string& directory, double downsample_size);
+
+    void SaveImages(const std::string &directory,
+        const std::vector<Eigen::Affine3d> &poses,
+        const std::vector<double> &keyframe_stamps,
+        std::map<int,sensor_msgs::CompressedImage> &images);
 
 void SaveOdom(
         const std::string& dump_directory,

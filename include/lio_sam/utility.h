@@ -17,6 +17,7 @@
 #include <gtsam/inference/Symbol.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
+#include "sensor_msgs/CompressedImage.h"
 
 
 // #include <opencv2/opencv.hpp>
@@ -77,6 +78,7 @@ public:
     bool use_gps = false;
     bool gcp_is_triggered = false;
     bool use_gcp_triggers = false;
+    bool camera_is_triggered = false;
     float gps_noise_scaling_factor = 1.0;
     // Velodyne Sensor Configuration: Velodyne
     SensorType sensor;
@@ -138,12 +140,16 @@ public:
     float globalMapVisualizationSearchRadius;
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
-    float antenna_to_lidar_offset;
+    //float antenna_to_lidar_offset;
 
     float datum_sweref_x = 0, datum_sweref_y = 0, datum_sweref_z = 0;
     bool use_datum = true;
     bool use_gcp_log_file = false;
     std::string gps_logfile_path = "";
+
+    bool use_camera_trigger = true;
+    bool save_camera_images = true;
+    std::map<int,sensor_msgs::CompressedImage> camera_buffer;
 
     ParamServer()
     {
@@ -255,10 +261,16 @@ public:
         nh.param<bool>("gnss/use_gcp_triggers", use_gcp_triggers, false);
         nh.param<bool>("gnss/use_gcp_log_file", use_gcp_log_file, false);
         nh.param<std::string>("gnss/gps_logfile_path", gps_logfile_path, "");
+
+        nh.param<bool>("lio_sam/use_camera_trigger", use_camera_trigger, true);
+        nh.param<bool>("lio_sam/use_camera_trigger", save_camera_images, true);
+        
+
+        
         
         
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
-        nh.param<float>("lio_sam/antenna_to_lidar_offset", antenna_to_lidar_offset, -0.0496);
+        //nh.param<float>("lio_sam/antenna_to_lidar_offset", antenna_to_lidar_offset, -0.0496);
         
 
         /*nh.param<float>("gnss/datum_sweref_x", datum_sweref_x, 0.0);
@@ -324,10 +336,12 @@ void SaveData(const std::string &directory,
               gtsam::Values &isamCurrentEstimate,
               const std::vector<double> &stamps,
               const Eigen::Vector3d& datum_offset,
+              std::map<int,sensor_msgs::CompressedImage> &images,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,
-              bool save_balm2);
+              bool save_balm2,
+              bool save_camera_images);
 
 class GpsReadLog{
     
