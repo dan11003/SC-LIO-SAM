@@ -144,24 +144,30 @@ namespace IO
         std::fstream cam_stream(cam_filename.c_str(), std::fstream::out);
 
         std::cout << "\"SLAM\" - Save Images and Poses to: " << directory << std::endl;
+        //File	Time	Long	Lat	Alt	course	pitch	roll
+
+        cam_stream << "File,Time,Long,Lat,Alt,course,pitch,roll" << std::endl;
         //iterate through all images
         int img_nr = 0;
         for(const auto &[idx,comprImage] : images){
+            img_nr++;
             //get pose
             if(idx >= poses.size()){
                 std::throw_with_nested(std::runtime_error("Incorrect usage - idx out of bounds"));
                 return;
             }
             const Eigen::Affine3d pose = poses[idx];
-            const Eigen::Quaterniond q(pose.linear());
+            const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2);
+            const double time = keyframe_stamps[idx];
           
             //save image
-            const std::string imgPath = directory + std::to_string(img_nr++) + ".jpg";
+            const std::string img_name = std::to_string(img_nr) + ".jpg";
+            const std::string imgPath = directory + img_name;
             std::ofstream imgFile(imgPath, std::ios::out | std::ios::binary);
             imgFile.write((char*)&comprImage.data[0], comprImage.data.size());
             imgFile.close();
             //save pose with 5 decimals precision, non scientific
-            cam_stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
+            cam_stream << std::fixed << std::setprecision(5) << img_name << "," << time << "," << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << euler(0) << "," << euler(1) << "," << euler(2) << std::endl;
         }
         cam_stream.close();
 
@@ -169,8 +175,9 @@ namespace IO
         std::fstream all_stream(pose_filename.c_str(), std::fstream::out);
         for(int i = 0; i < poses.size(); i++){
             const Eigen::Affine3d pose = poses[i];
-            const Eigen::Quaterniond q(pose.linear());
-            all_stream << std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << std::endl;
+            const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2);
+            const double time = keyframe_stamps[i];
+            all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "," << pose.translation().y() << "," << pose.translation().z() << "," << euler(0) << "," << euler(1) << "," << euler(2) << std::endl;
         }
         all_stream.close();
         
