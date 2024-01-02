@@ -157,7 +157,7 @@ namespace IO
                 return;
             }
             const Eigen::Affine3d pose = poses[idx];
-            const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2);
+            const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2)*180.0/M_PI;
             const double time = keyframe_stamps[idx];
           
             //save image
