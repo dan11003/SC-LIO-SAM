@@ -2426,7 +2426,7 @@ public:
     {
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
-        SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, camera_buffer, save_BALM, save_odom, save_Posegraph, save_BALM2, save_camera_images);
+        SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, camera_buffer, lidar_to_cam_transform, save_BALM, save_odom, save_Posegraph, save_BALM2, save_camera_images);
         if (saveRefinementGraph)
         {
             cout << "Saving graph for refinement" << endl;

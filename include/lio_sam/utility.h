@@ -150,6 +150,8 @@ public:
     bool use_camera_trigger = true;
     bool save_camera_images = true;
     std::map<int,sensor_msgs::CompressedImage> camera_buffer;
+    double lidar_to_cam_x, lidar_to_cam_y, lidar_to_cam_z, lidar_to_cam_roll, lidar_to_cam_pitch, lidar_to_cam_yaw;
+    Eigen::Affine3d lidar_to_cam_transform;
 
     ParamServer()
     {
@@ -265,8 +267,16 @@ public:
         nh.param<bool>("lio_sam/use_camera_trigger", use_camera_trigger, true);
         nh.param<bool>("lio_sam/use_camera_trigger", save_camera_images, true);
         
-
-        
+        nh.param<double>("lio_sam/lidar_to_cam_x", lidar_to_cam_x, 0);
+        nh.param<double>("lio_sam/lidar_to_cam_y", lidar_to_cam_y, 0);
+        nh.param<double>("lio_sam/lidar_to_cam_z", lidar_to_cam_z, 0.15);
+        nh.param<double>("lio_sam/lidar_to_cam_roll", lidar_to_cam_roll, 0);
+        nh.param<double>("lio_sam/lidar_to_cam_pitch", lidar_to_cam_pitch, 0);
+        nh.param<double>("lio_sam/lidar_to_cam_yaw", lidar_to_cam_yaw, 0);
+        cout << "Lidar to camera calibration parameters:" << endl;
+        cout << "lidar_to_cam_x: " << lidar_to_cam_x << "\n, lidar_to_cam_y: " << lidar_to_cam_y << "\n, lidar_to_cam_z: " << lidar_to_cam_z << "\n, lidar_to_cam_roll: " << lidar_to_cam_roll << "\n, lidar_to_cam_pitch: " << lidar_to_cam_pitch << "\n, lidar_to_cam_yaw: " << lidar_to_cam_yaw << endl;
+        const auto rot = Eigen::AngleAxisd(lidar_to_cam_roll*M_PI/180.0, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(lidar_to_cam_pitch*M_PI/180.0, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(lidar_to_cam_yaw*M_PI/180.0, Eigen::Vector3d::UnitZ());
+        lidar_to_cam_transform = Eigen::Translation3d(lidar_to_cam_x, lidar_to_cam_y, lidar_to_cam_z) * rot;
         
         
         nh.param<float>("lio_sam/noise_scaling_factor", gps_noise_scaling_factor, 1.0);
@@ -337,6 +347,7 @@ void SaveData(const std::string &directory,
               const std::vector<double> &stamps,
               const Eigen::Vector3d& datum_offset,
               std::map<int,sensor_msgs::CompressedImage> &images,
+              const Eigen::Affine3d &lidar_to_cam_transform,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,

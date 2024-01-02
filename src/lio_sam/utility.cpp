@@ -21,6 +21,7 @@ void SaveData(const std::string &directory,
               const std::vector<double> &stamps,
               const Eigen::Vector3d &datum_offset,
               std::map<int,sensor_msgs::CompressedImage> &images,
+              const Eigen::Affine3d &lidar_to_cam_transform,
               bool save_balm,
               bool save_odom,
               bool save_posegraph,
@@ -49,8 +50,16 @@ void SaveData(const std::string &directory,
     IO::SaveBALM2(directory + "BALM2/", poses, stamps, clouds);
   if (save_posegraph)
     std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
-  if(save_camera_images)
-    IO::SaveImages(directory + "images/", poses, stamps, images);
+  if(save_camera_images){
+    cout << "Saving camera poses with offset: " << lidar_to_cam_transform.matrix() << endl;
+    std::vector<Eigen::Affine3d> cam_poses;
+    for (const auto & pose : poses)
+    {
+      cam_poses.push_back(pose*lidar_to_cam_transform);
+    }
+    IO::SaveImages(directory + "images/", cam_poses, stamps, images);
+  }
+    
 
   IO::SaveMerged(clouds, poses, datum_offset, directory, 0.3);
 }

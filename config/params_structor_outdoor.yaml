@@ -14,6 +14,14 @@ lio_sam:
   odometryFrame: "odom"
   mapFrame: "map"
 
+  # Camera parameters - meters, degrees
+  lidar_to_cam_x: 0
+  lidar_to_cam_y: 0
+  lidar_to_cam_z: 0
+  lidar_to_cam_roll: 0.0
+  lidar_to_cam_pitch: 0.0
+  lidar_to_cam_yaw: 0.0
+
   # GPS Settings
   use_gps: true                              # Stäng av gps
   noise_scaling_factor: 5.0                   # Vikta ner påverkan av gps, högre värde = mindre påverkan
