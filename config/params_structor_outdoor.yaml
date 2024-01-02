@@ -25,7 +25,7 @@ lio_sam:
   # GPS Settings
   use_gps: true                              # Stäng av gps
   noise_scaling_factor: 5.0                   # Vikta ner påverkan av gps, högre värde = mindre påverkan
-  useImuHeadingInitialization: true           # if using GPS data, set to "true"
+  useImuHeadingInitialization: false           # if using GPS data, set to "true"
   useGpsElevation: true                      # if GPS elevation is bad, set to "false"
   gpsCovThreshold: 0.06                        # m^2, threshold for using GPS data. Varians i x eller y led, position_covariance[0 eller 7] i fix-meddelandet
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data. När drift är större än sqrt(25) skall gps integreras.

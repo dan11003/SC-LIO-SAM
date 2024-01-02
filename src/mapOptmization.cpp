@@ -447,6 +447,8 @@ public:
 
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr &msgIn)
     {
+        //cout << "laserCloudInfoHandler" << endl;
+        //cout << msgIn->imuRollInit << ", " << msgIn->imuPitchInit << ", " << msgIn->imuYawInit << endl;
         tLastCallback = ros::Time::now();
         timeLaserInfoStamp = msgIn->header.stamp;
         timeLatestScan = msgIn->header.stamp.toSec();
@@ -492,7 +494,9 @@ public:
             timeLastProcessing = timeLatestScan;
 
             updateInitialGuess();
-
+            
+            //cout << "initial guess\ntrans: " << transformTobeMapped[3] << ", " << transformTobeMapped[4] << ", " << transformTobeMapped[5] << endl;
+            //cout << "rot:   " << transformTobeMapped[0] << ", " << transformTobeMapped[1] << ", " << transformTobeMapped[2] << endl;
             extractSurroundingKeyFrames();
 
             downsampleCurrentScan();
@@ -780,6 +784,18 @@ public:
                 gpsFactorMarkers->points[i].intensity = gps_constraints_vec[i](3);
             }
             publishCloud(&pubGpsConstraints, gpsFactorMarkers, timeLaserInfoStamp, mapFrame);
+        }
+        // iterate over all poses from isam solution and publis them in the tf tree
+        static tf::TransformBroadcaster tfBroadcaster;
+        for (int i = 0; i < isamCurrentEstimate.size(); ++i)
+        {
+            Eigen::Isometry3d pose(isamCurrentEstimate.at<Pose3>(i).matrix());
+            Eigen::Quaterniond q(pose.rotation());
+            Eigen::Vector3d t(pose.translation());
+            tf::Transform transform;
+            transform.setOrigin(tf::Vector3(t(0), t(1), t(2)));
+            transform.setRotation(tf::Quaternion(q.x(), q.y(), q.z(), q.w()));
+            tfBroadcaster.sendTransform(tf::StampedTransform(transform, timeLaserInfoStamp, mapFrame, "pose_" + std::to_string(i)));
         }
     }
 
@@ -2424,6 +2440,15 @@ public:
     }
     void SaveAll()
     {
+        cout << "Saving poses: " << endl;
+        for (int i = 0; i < isamCurrentEstimate.size(); ++i)
+        {
+            Eigen::Isometry3d pose(isamCurrentEstimate.at<Pose3>(i).matrix());
+            // cout << "pose: " << pose.matrix() << endl;
+            // print euler angles
+            Eigen::Vector3d euler_angles = pose.rotation().eulerAngles(0, 1, 2)*180.0/M_PI;
+            cout << "euler_angles: " << euler_angles.transpose() << endl;
+        }
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();
         SaveData(savePCDDirectory, raw_merged_keyframes, isamCurrentEstimate, stamps, datum_offset, camera_buffer, lidar_to_cam_transform, save_BALM, save_odom, save_Posegraph, save_BALM2, save_camera_images);

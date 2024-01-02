@@ -85,6 +85,10 @@ std::vector<std::string> GpsReadLog::split(const std::string &s, char delimiter)
 
 void GpsReadLog::Read(std::vector<nav_msgs::Odometry>& gps_log){
   cout << "Reading gcp" << endl;
+  if(!file.is_open()){
+    std::cerr << "Could not open file " << endl;
+    return;
+  }
   std::string line;
   std::getline(file, line);
     
