@@ -157,7 +157,7 @@ namespace IO
                 return;
             }
             const Eigen::Affine3d pose = poses[idx];
-            const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2)*180.0/M_PI;
+            const Eigen::Vector3d euler = pose.linear().eulerAngles(2,1,0)*180.0/M_PI;
             const double time = keyframe_stamps[idx];
           
             //save image
@@ -167,7 +167,7 @@ namespace IO
             imgFile.write((char*)&comprImage.data[0], comprImage.data.size());
             imgFile.close();
             //save pose with 5 decimals precision, non scientific
-            cam_stream << std::fixed << std::setprecision(5) << std::quoted(img_name) << "\t" << time << "\t" << pose.translation().x() << "\t" << pose.translation().y() << "\t" << pose.translation().z() << "\t" << euler(0) << "\t" << euler(1) << "\t" << euler(2) << std::endl;
+            cam_stream << std::fixed << std::setprecision(5) << std::quoted(img_name) << "\t" << time << "\t" << pose.translation().x() << "\t" << pose.translation().y() << "\t" << pose.translation().z() << "\t" << euler(2) << "\t" << euler(1) << "\t" << euler(0) << std::endl;
         }
         cam_stream.close();
 
@@ -177,7 +177,7 @@ namespace IO
             const Eigen::Affine3d pose = poses[i];
             const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2);
             const double time = keyframe_stamps[i];
-            all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "" << pose.translation().y() << "," << pose.translation().z() << "," << euler(0) << "," << euler(1) << "," << euler(2) << std::endl;
+            all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "" << pose.translation().y() << "," << pose.translation().z() << "," << euler(2) << "," << euler(1) << "," << euler(0) << std::endl;
         }
         all_stream.close();
         
