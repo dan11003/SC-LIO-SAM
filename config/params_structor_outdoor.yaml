@@ -19,8 +19,8 @@ lio_sam:
   lidar_to_cam_y: 0
   lidar_to_cam_z: 0
   lidar_to_cam_roll: 0.0
-  lidar_to_cam_pitch: 0.0
-  lidar_to_cam_yaw: 90.0
+  lidar_to_cam_pitch: 0.0 # +-2.5
+  lidar_to_cam_yaw: 90.0 # +- 15 degrees, unless potree is updated
 
   # GPS Settings
   use_gps: true                              # Stäng av gps
