@@ -177,7 +177,7 @@ namespace IO
             const Eigen::Affine3d pose = poses[i];
             const Eigen::Vector3d euler = pose.linear().eulerAngles(0,1,2);
             const double time = keyframe_stamps[i];
-            all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "" << pose.translation().y() << "," << pose.translation().z() << "," << euler(2) << "," << euler(1) << "," << euler(0) << std::endl;
+            all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "" << pose.translation().y() << "," << pose.translation().z() << "," << euler(0) << "," << euler(1) << "," << euler(2) << std::endl;
         }
         all_stream.close();
         
