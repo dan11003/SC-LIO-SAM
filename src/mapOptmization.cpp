@@ -2446,8 +2446,6 @@ public:
             Eigen::Isometry3d pose(isamCurrentEstimate.at<Pose3>(i).matrix());
             // cout << "pose: " << pose.matrix() << endl;
             // print euler angles
-            Eigen::Vector3d euler_angles = pose.rotation().eulerAngles(0, 1, 2)*180.0/M_PI;
-            cout << "euler_angles: " << euler_angles.transpose() << endl;
         }
         std::cout << "\"SLAM\" - Save output to: " << savePCDDirectory << std::endl;
         Eigen::Vector3d datum_offset = use_datum ? Eigen::Vector3d(datum_sweref_x, datum_sweref_y, datum_sweref_z) : Eigen::Vector3d::Zero();

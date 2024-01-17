@@ -76,6 +76,8 @@ namespace IO
         */
     }
 
+
+
     void SaveOdom(
         const std::string &dump_directory,
         const std::vector<Eigen::Affine3d> &poses,
@@ -157,7 +159,7 @@ namespace IO
                 return;
             }
             const Eigen::Affine3d pose = poses[idx];
-            const Eigen::Vector3d euler = pose.linear().eulerAngles(2,1,0)*180.0/M_PI;
+            Eigen::Vector3d euler = pose.linear().eulerAngles(2,1,0)* 180.0/M_PI;
             const double time = keyframe_stamps[idx];
           
             //save image
@@ -175,7 +177,7 @@ namespace IO
         std::fstream all_stream(pose_filename.c_str(), std::fstream::out);
         for(int i = 0; i < poses.size(); i++){
             const Eigen::Affine3d pose = poses[i];
-            const Eigen::Vector3d euler = pose.linear().eulerAngles(2,1,0)*180.0/M_PI;
+            Eigen::Vector3d euler = pose.linear().eulerAngles(2,1,0)* 180.0/M_PI;;
             const double time = keyframe_stamps[i];
             all_stream <<  std::fixed << std::setprecision(5) << pose.translation().x() << "" << pose.translation().y() << "," << pose.translation().z() << "," << euler(0) << "," << euler(1) << "," << euler(2) << std::endl;
         }
@@ -400,3 +402,4 @@ Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond &q, const Eigen::Vector3
     pred_mat.block<3, 1>(0, 3) = transl;
     return Eigen::Isometry3d(pred_mat);
 }
+
