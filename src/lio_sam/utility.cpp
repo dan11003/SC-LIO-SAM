@@ -51,7 +51,7 @@ void SaveData(const std::string &directory,
   if (save_posegraph)
     std::cerr << "Saving of posegraph not implemented yet for sc liosam" << std::endl;
   if(save_camera_images){
-    cout << "Saving camera poses with euler:  " << lidar_to_cam_transform.linear().eulerAngles(2,1,0)*180/M_PI << endl;
+    cout << "Saving camera poses with euler:  " << (lidar_to_cam_transform.linear().eulerAngles(2,1,0)*180/M_PI).transpose() << endl;
     cout << "Saving camera poses with transl: " << lidar_to_cam_transform.translation().transpose() << endl;
     std::vector<Eigen::Affine3d> cam_poses;
     for (const auto & pose : poses)
