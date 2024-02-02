@@ -939,7 +939,7 @@ public:
         // find keys
         auto detectResult = scManager.detectLoopClosureID(); // first: nn index, second: yaw diff
         int loopKeyCur = copy_cloudKeyPoses3D->size() - 1;
-        ;
+        
         int loopKeyPre = detectResult.first;
         float yawDiffRad = detectResult.second; // not use for v1 (because pcl icp withi initial somthing wrong...)
         if (loopKeyPre == -1 /* No loop found */)
@@ -2038,7 +2038,7 @@ public:
             }
         }
         const size_t idx = cloudKeyPoses3D->size();
-        cout << "idx: " << idx << endl;
+        cout << "Daniel:  make sure idx is correct here" << idx << endl;
         camera_buffer[idx] = std::move(thisCamera);
         cout << "Saved camera_buffer[idx]: " << camera_buffer[idx].header.frame_id << endl;
 

@@ -58,7 +58,7 @@ void SaveData(const std::string &directory,
     {
       cam_poses.push_back(pose*lidar_to_cam_transform);
     }
-    IO::SaveImages(directory + "images/", cam_poses, stamps, images);
+    IO::SaveImages(directory + "images/", cam_poses, stamps, images, clouds);
   }
     
 

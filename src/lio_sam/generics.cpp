@@ -135,11 +135,12 @@ namespace IO
         }
         data_ofs.close();
     }
-    
+
     void SaveImages(const std::string &directory,
         const std::vector<Eigen::Affine3d> &poses,
         const std::vector<double> &keyframe_stamps,
-        std::map<int,sensor_msgs::CompressedImage> &images)
+        std::map<int,sensor_msgs::CompressedImage> &images,
+        std::vector<pcl::PointCloud<PointType>::Ptr> clouds)
     {
         boost::filesystem::create_directories(directory);
         const std::string cam_filename = directory + "coordinates.txt";
@@ -170,6 +171,11 @@ namespace IO
             imgFile.close();
             //save pose with 5 decimals precision, non scientific
             cam_stream << std::fixed << std::setprecision(5) << std::quoted(img_name) << "\t" << time << "\t" << pose.translation().x() << "\t" << pose.translation().y() << "\t" << pose.translation().z() << "\t" << euler(0) << "\t" << euler(1) << "\t" << euler(2) << std::endl;
+
+            //FOR DEBUG ONLY, Save Local Pointcloud and image
+            auto cloud = clouds[idx];
+            const std::string pcdPath = directory + std::string("scan_") + std::to_string(img_nr) + ".pcd";
+            pcl::io::savePCDFileBinary(pcdPath, *cloud);
         }
         cam_stream.close();
 
